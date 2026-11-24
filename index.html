@@ -8,12 +8,12 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#1d5e72">
+<meta name="theme-color" content="#2b2f33">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bills">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script>window.APP_VERSION="2026.11.25-0608";</script>
+<script>window.APP_VERSION="2026.11.25-0617";</script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.97.0"></script>
 <script src="bills-app.js"></script>
@@ -22,16 +22,16 @@
 <style>
 /* Layout: phone = one column with a bottom tab bar; PC = sticky left sidebar and a wide two-column work area */
 :root{
- --bg:#f3f5f4;--card:#ffffff;--sunk:#eef2f1;--tx:#16232a;--mu:#5b6970;--bd:#dce3e1;
- --ac:#1d5e72;--acs:#e1edf1;--ok:#2a7a4b;--oks:#e0f0e6;--bad:#b3262f;--bads:#fbe8e9;--warn:#935a00;--warns:#fbf0da;
- --hero:#1d5e72;--ht:#ffffff;--negbg:#b3262f;--e1:#2a7a4b;--e2:#1d5e72;--e3:#b47e17;
- --av-s:26%;--av-l:91%;--av-f:30%;--sh:0 1px 2px rgba(18,38,46,.06),0 3px 10px rgba(18,38,46,.04);--scrim:rgba(14,28,34,.45);
+ --bg:#f4f4f5;--card:#ffffff;--sunk:#efeff0;--tx:#1b1d1f;--mu:#62666b;--bd:#dfe0e2;
+ --ac:#2b2f33;--acs:#e9eaeb;--ok:#2a7a4b;--oks:#e0f0e6;--bad:#b3262f;--bads:#fbe8e9;--warn:#935a00;--warns:#fbf0da;
+ --hero:#26292d;--ht:#ffffff;--negbg:#b3262f;--e1:#2a7a4b;--e2:#3d4247;--e3:#b47e17;
+ --av-s:26%;--av-l:91%;--av-f:30%;--sh:0 1px 2px rgba(20,22,25,.06),0 3px 10px rgba(20,22,25,.04);--scrim:rgba(16,17,19,.45);
  --f-head:"Schibsted Grotesk",ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
  --f-body:"Source Sans 3",ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
  --r:12px;--rs:8px;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1416;--card:#162024;--sunk:#101a1d;--tx:#e4ebed;--mu:#98a7ad;--bd:#27353b;--ac:#7cc0d4;--acs:#18313a;--ok:#62c58c;--oks:#15301f;--bad:#f2858c;--bads:#3a1b1f;--warn:#e4ad52;--warns:#33260f;--hero:#2b6f84;--ht:#ffffff;--negbg:#7d2631;--e1:#62c58c;--e2:#7cc0d4;--e3:#e4ad52;--av-s:20%;--av-l:23%;--av-f:80%;--sh:0 1px 2px rgba(0,0,0,.35);--scrim:rgba(0,0,0,.6);color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1416;--card:#162024;--sunk:#101a1d;--tx:#e4ebed;--mu:#98a7ad;--bd:#27353b;--ac:#7cc0d4;--acs:#18313a;--ok:#62c58c;--oks:#15301f;--bad:#f2858c;--bads:#3a1b1f;--warn:#e4ad52;--warns:#33260f;--hero:#2b6f84;--ht:#ffffff;--negbg:#7d2631;--e1:#62c58c;--e2:#7cc0d4;--e3:#e4ad52;--av-s:20%;--av-l:23%;--av-f:80%;--sh:0 1px 2px rgba(0,0,0,.35);--scrim:rgba(0,0,0,.6);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111214;--card:#1b1d20;--sunk:#141518;--tx:#e8e9eb;--mu:#a1a5aa;--bd:#2d3034;--ac:#d6d9dc;--acs:#26292d;--ok:#62c58c;--oks:#15301f;--bad:#f2858c;--bads:#3a1b1f;--warn:#e4ad52;--warns:#33260f;--hero:#2e3236;--ht:#ffffff;--negbg:#7d2631;--e1:#62c58c;--e2:#b9bec3;--e3:#e4ad52;--av-s:20%;--av-l:23%;--av-f:80%;--sh:0 1px 2px rgba(0,0,0,.35);--scrim:rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111214;--card:#1b1d20;--sunk:#141518;--tx:#e8e9eb;--mu:#a1a5aa;--bd:#2d3034;--ac:#d6d9dc;--acs:#26292d;--ok:#62c58c;--oks:#15301f;--bad:#f2858c;--bads:#3a1b1f;--warn:#e4ad52;--warns:#33260f;--hero:#2e3236;--ht:#ffffff;--negbg:#7d2631;--e1:#62c58c;--e2:#b9bec3;--e3:#e4ad52;--av-s:20%;--av-l:23%;--av-f:80%;--sh:0 1px 2px rgba(0,0,0,.35);--scrim:rgba(0,0,0,.6);color-scheme:dark}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 var(--f-body);font-variant-numeric:tabular-nums;
  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px calc(96px + env(safe-area-inset-bottom,0px))}
@@ -61,7 +61,7 @@ button:disabled{opacity:.5;cursor:default}button.p{background:var(--ac);border-c
 .mainnav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;font-size:12px;font-weight:600;color:var(--mu);border-radius:10px}
 .mainnav button svg{width:24px;height:24px;padding:3px 12px;box-sizing:content-box;border-radius:999px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .mainnav button.on{color:var(--ac)}.mainnav button.on svg{background:var(--acs)}
-.fab{position:fixed;z-index:11;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:16px;font-size:28px;line-height:1;padding:0;background:var(--ac);border-color:var(--ac);color:var(--card);box-shadow:0 6px 18px rgba(18,38,46,.25)}
+.fab{position:fixed;z-index:11;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:16px;font-size:28px;line-height:1;padding:0;background:var(--ac);border-color:var(--ac);color:var(--card);box-shadow:0 6px 18px rgba(20,22,25,.25)}
 .fab:hover{background:var(--ac);filter:brightness(1.08)}
 
 /* period navigation (month and fortnight) */

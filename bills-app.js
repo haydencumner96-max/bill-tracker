@@ -21,18 +21,18 @@
   }
 
   // ---------- sign in ----------
-  const css = `#bt-gate{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:var(--bg,#f3f5f2);color:var(--tx,#14201d);font-family:var(--f-body,system-ui,sans-serif)}
+  const css = `#bt-gate{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:var(--bg,#f4f4f5);color:var(--tx,#14201d);font-family:var(--f-body,system-ui,sans-serif)}
 #bt-gate .box{width:100%;max-width:360px}
 #bt-gate .ic{width:64px;height:64px;border-radius:16px;margin-bottom:14px}
 #bt-gate h1{font:700 24px/1.2 var(--f-head,inherit);margin:0 0 6px}
 #bt-gate p{margin:0 0 18px;color:var(--mu,#5b6b66);line-height:1.45}
 #bt-gate label{display:block;font-weight:600;font-size:14px;margin:12px 0 6px}
 #bt-gate input{width:100%;box-sizing:border-box;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--bd,#d5ddd9);background:var(--card,#fff);color:inherit}
-#bt-gate button{width:100%;margin-top:18px;font:600 16px inherit;padding:13px;border-radius:12px;border:0;background:var(--ac,#1d5e72);color:#fff}
+#bt-gate button{width:100%;margin-top:18px;font:600 16px inherit;padding:13px;border-radius:12px;border:0;background:var(--ac,#2b2f33);color:#fff}
 #bt-gate button:disabled{opacity:.6}
 #bt-gate .err{color:var(--bad,#b3261e);font-weight:600;margin:12px 0 0}
 #bt-gate .alt{margin-top:16px;font-size:14px}
-#bt-gate .alt a{color:var(--ac,#1d5e72)}`;
+#bt-gate .alt a{color:var(--ac,#2b2f33)}`;
 
   function onBody(fn) { if (document.body) fn(); else document.addEventListener("DOMContentLoaded", fn, { once: true }); }
 
