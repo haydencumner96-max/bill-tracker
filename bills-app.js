@@ -84,6 +84,41 @@
   }
   boot();
 
+  // ---------- one-tap import link: #import=<compressed data> (stays on the phone, never sent to GitHub) ----------
+  let pendingImp = null;
+  (function takeImportLink() {
+    const m = location.hash.match(/^#import=([A-Za-z0-9_-]+)$/);
+    if (!m) return;
+    pendingImp = m[1];
+    history.replaceState(null, "", location.pathname + location.search);
+  })();
+  async function decodeImp(b64) {
+    const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return JSON.parse(await new Response(stream).text());
+  }
+  // runs once the tracker has loaded its saved data, so the import isn't overwritten by an older copy
+  async function runImport() {
+    if (!pendingImp) return;
+    const code = pendingImp; pendingImp = null;
+    const say = (t) => { try { stat(t); } catch (e) {} };
+    try {
+      const d = await decodeImp(code);
+      if (!d || !d.bills) throw new Error("no bills");
+      // the same link opened again later (on any device) must not undo newer changes
+      if (d.imp && S && S.imp === d.imp) { say("Already imported – nothing changed"); return; }
+      S = d; initAn(); migrate(); persist(); draw();
+      const msg = "Imported " + d.bills.length + " bills from the Claude version";
+      say(msg);
+      setTimeout(() => say(msg), 1500); // after the save to the other devices finishes
+      setTimeout(() => say(okMsg()), 8000);
+    } catch (e) {
+      say("Import link didn't work – use Data → Import with the backup file");
+    }
+  }
+  window.btRunImport = runImport;
+
   window.btSignOut = async function () {
     try { await client().auth.signOut(); } catch (e) {}
     location.reload();
@@ -103,11 +138,11 @@
         async get() { return snapOf(await run(s.from(TABLE).select("data").eq("col", COL).eq("id", id).maybeSingle())); },
         async set(d) { await run(s.from(TABLE).upsert({ user_id: user.id, col: COL, id, data: d, updated_at: new Date().toISOString() }, { onConflict: "user_id,col,id" })); },
         onSnapshot(fn, onErr) {
-          let busy = null, ch = null;
+          let busy = null, ch = null, first = true;
           const refresh = () => {
             if (busy) return busy;
             busy = run(s.from(TABLE).select("data").eq("col", COL).eq("id", id).maybeSingle())
-              .then((row) => fn(snapOf(row)))
+              .then((row) => { fn(snapOf(row)); if (first) { first = false; setTimeout(runImport, 0); } })
               .catch((e) => onErr && onErr(e))
               .finally(() => { busy = null; });
             return busy;
@@ -134,7 +169,8 @@
     async use(name) {
       if (name !== "db") return null; // Export uses a normal file download in the app
       const ok = await ready;
-      return ok ? makeDb() : null;
+      if (!ok) { setTimeout(runImport, 0); return null; } // using it on this device only
+      return makeDb();
     },
   };
 })();
