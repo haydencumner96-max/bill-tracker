@@ -84,19 +84,31 @@
   }
   boot();
 
-  // ---------- one-tap import link: #import=<compressed data> (stays on the phone, never sent to GitHub) ----------
+  // ---------- one-tap import link ----------
+  //   #import=<compressed data>            the data itself
+  //   #get=<file>&key=<secret>             an encrypted file in imports/, unlocked by the key in the link
+  // The part after # stays on the phone: browsers never send it to GitHub.
   let pendingImp = null;
   (function takeImportLink() {
-    const m = location.hash.match(/^#import=([A-Za-z0-9_-]+)$/);
-    if (!m) return;
-    pendingImp = m[1];
+    const a = location.hash.match(/^#import=([A-Za-z0-9_-]+)$/);
+    const b = location.hash.match(/^#get=([a-z0-9-]+)&key=([A-Za-z0-9_-]+)$/);
+    if (!a && !b) return;
+    pendingImp = a ? { data: a[1] } : { file: b[1], key: b[2] };
     history.replaceState(null, "", location.pathname + location.search);
   })();
-  async function decodeImp(b64) {
-    const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
-    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  const b64bytes = (b64) => Uint8Array.from(atob(b64.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  async function inflate(bytes) {
     const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
     return JSON.parse(await new Response(stream).text());
+  }
+  async function decodeImp(p) {
+    if (p.data) return inflate(b64bytes(p.data));
+    const res = await fetch("imports/" + p.file + ".bin", { cache: "no-store" });
+    if (!res.ok) throw new Error("file missing");
+    const buf = new Uint8Array(await res.arrayBuffer());
+    const key = await crypto.subtle.importKey("raw", b64bytes(p.key), "AES-GCM", false, ["decrypt"]);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, key, buf.slice(12));
+    return inflate(new Uint8Array(plain));
   }
   // runs once the tracker has loaded its saved data, so the import isn't overwritten by an older copy
   async function runImport() {
