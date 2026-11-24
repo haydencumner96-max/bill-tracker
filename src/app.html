@@ -1,0 +1,620 @@
+<title>Blank Bill Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script>try{var p=localStorage.getItem("bt.view");document.documentElement.dataset.view=(p==="pc"||p==="mobile")?p:(innerWidth>=900?"pc":"mobile")}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: phone = one column with a bottom tab bar; PC = sticky left sidebar and a wide two-column work area */
+:root{
+ --bg:#f3f5f4;--card:#ffffff;--sunk:#eef2f1;--tx:#16232a;--mu:#5b6970;--bd:#dce3e1;
+ --ac:#1d5e72;--acs:#e1edf1;--ok:#2a7a4b;--oks:#e0f0e6;--bad:#b3262f;--bads:#fbe8e9;--warn:#935a00;--warns:#fbf0da;
+ --hero:#1d5e72;--ht:#ffffff;--negbg:#b3262f;--e1:#2a7a4b;--e2:#1d5e72;--e3:#b47e17;
+ --av-s:26%;--av-l:91%;--av-f:30%;--sh:0 1px 2px rgba(18,38,46,.06),0 3px 10px rgba(18,38,46,.04);--scrim:rgba(14,28,34,.45);
+ --f-head:"Schibsted Grotesk",ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+ --f-body:"Source Sans 3",ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+ --r:12px;--rs:8px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1416;--card:#162024;--sunk:#101a1d;--tx:#e4ebed;--mu:#98a7ad;--bd:#27353b;--ac:#7cc0d4;--acs:#18313a;--ok:#62c58c;--oks:#15301f;--bad:#f2858c;--bads:#3a1b1f;--warn:#e4ad52;--warns:#33260f;--hero:#2b6f84;--ht:#ffffff;--negbg:#7d2631;--e1:#62c58c;--e2:#7cc0d4;--e3:#e4ad52;--av-s:20%;--av-l:23%;--av-f:80%;--sh:0 1px 2px rgba(0,0,0,.35);--scrim:rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1416;--card:#162024;--sunk:#101a1d;--tx:#e4ebed;--mu:#98a7ad;--bd:#27353b;--ac:#7cc0d4;--acs:#18313a;--ok:#62c58c;--oks:#15301f;--bad:#f2858c;--bads:#3a1b1f;--warn:#e4ad52;--warns:#33260f;--hero:#2b6f84;--ht:#ffffff;--negbg:#7d2631;--e1:#62c58c;--e2:#7cc0d4;--e3:#e4ad52;--av-s:20%;--av-l:23%;--av-f:80%;--sh:0 1px 2px rgba(0,0,0,.35);--scrim:rgba(0,0,0,.6);color-scheme:dark}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 var(--f-body);font-variant-numeric:tabular-nums;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px calc(96px + env(safe-area-inset-bottom,0px))}
+h1{font:700 24px/1.15 var(--f-head);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}
+.mu{color:var(--mu);font-size:14px}
+input,select,button{font:inherit;color:var(--tx)}
+input,select{font-size:16px;background:var(--sunk);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px}
+button{cursor:pointer;border:1px solid var(--bd);background:var(--card);border-radius:var(--rs);padding:9px 14px;font-weight:600;font-size:15px;-webkit-tap-highlight-color:transparent}
+button:hover{background:var(--sunk)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}button.p{background:var(--ac);border-color:var(--ac);color:var(--card)}button.p:hover{filter:brightness(1.08);background:var(--ac)}
+.x{background:none;border-color:transparent;color:var(--bad);font-weight:600}
+.lnk{background:none;border:0;color:var(--ac);font-weight:600;font-size:14px;padding:2px 4px;white-space:nowrap}.lnk:hover{background:none;text-decoration:underline}
+
+/* shell + navigation */
+.shell{max-width:720px;margin:0 auto}
+.main{min-width:0}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.fnow{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;font-size:15px;margin-top:4px;line-height:1.35}.fnow svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--ac);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.fnow b{font-weight:700}.fnow .f1{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.fnow .mu{font-size:13px}.fnow .vw{background:var(--warns);color:var(--warn);border-radius:999px;padding:1px 9px;font-size:13px;font-weight:600}.fnow .lnk{font-size:13px;padding:0}
+#sy{font-size:13px;margin-top:2px}#sy::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+.vsw{display:flex;gap:2px;background:var(--sunk);border:1px solid var(--bd);padding:3px;border-radius:10px;flex:none}
+.vsw button{border:0;background:transparent;padding:5px 12px;font-size:13px;color:var(--mu);border-radius:7px}.vsw .on{background:var(--card);color:var(--tx);box-shadow:var(--sh)}
+.mainnav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;background:var(--card);border-top:1px solid var(--bd);
+ padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.mainnav .brand{display:none}
+.mainnav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;font-size:12px;font-weight:600;color:var(--mu);border-radius:10px}
+.mainnav button svg{width:24px;height:24px;padding:3px 12px;box-sizing:content-box;border-radius:999px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mainnav button.on{color:var(--ac)}.mainnav button.on svg{background:var(--acs)}
+.fab{position:fixed;z-index:11;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:16px;font-size:28px;line-height:1;padding:0;background:var(--ac);border-color:var(--ac);color:var(--card);box-shadow:0 6px 18px rgba(18,38,46,.25)}
+.fab:hover{background:var(--ac);filter:brightness(1.08)}
+
+/* period navigation (month and fortnight) */
+.bm.nav,.nav2{margin:2px 0 14px;gap:12px}
+.bm.nav>button,.nav2>button{width:38px;height:38px;border-radius:50%;padding:0;font-size:20px;font-weight:500;flex:none}
+.bm.nav b,.nav2 b{font:700 18px var(--f-head)}
+.nav2 .mu{font-size:13px}
+
+/* summary panel */
+.stats,.s3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+.stat{padding:12px 14px;min-width:0}.stat+.stat{border-left:1px solid var(--bd)}
+.stat small{display:block;color:var(--mu);font-size:13px;line-height:1.3}
+.stat b{display:block;font:700 clamp(15px,4.2vw,24px)/1.25 var(--f-head);letter-spacing:-.01em;margin-top:2px;white-space:nowrap}
+#v .stats:not(.plain) .stat:nth-child(3) b{color:var(--ok)}#v .stats:not(.plain) .stat.neg b{color:var(--bad)}
+.stats .stat.neg{background:var(--bads)}
+.bar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;margin:0 2px 14px}.bar i{display:block;height:100%;background:var(--ok);border-radius:3px;transition:width .4s ease}
+
+/* segmented controls */
+.tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--sunk);border:1px solid var(--bd);padding:3px;border-radius:10px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--mu);padding:8px 6px;border-radius:7px;font-size:14px}
+.tabs .on{background:var(--card);color:var(--tx);box-shadow:var(--sh)}.tabs small{display:block;font-weight:400}
+
+/* lists */
+.cat{margin:20px 2px 8px;font-size:15px}.cat span:first-child{font:600 15px var(--f-head);color:var(--tx)}.cat span:last-child{color:var(--mu);font-size:14px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:2px 16px;margin-bottom:10px;box-shadow:var(--sh)}
+.bill{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--bd)}.bill:last-child{border-bottom:0}
+.av{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font:700 14px var(--f-head);background:hsl(var(--h) var(--av-s) var(--av-l));color:hsl(var(--h) 38% var(--av-f))}
+.bill .m{flex:1;min-width:0;cursor:pointer}.bill .n{font-weight:600;font-size:16px;line-height:1.3}.bill .s{font-size:13px;color:var(--mu);margin-top:2px}
+.amt{font-weight:700;font-size:16px;white-space:nowrap;cursor:pointer}
+.chk{display:flex;gap:6px}
+.amt.tp{text-align:right}.hint{display:inline-block;font:500 11px/1.25 var(--f-body,inherit);color:var(--mu);text-decoration:none;white-space:normal;margin-top:3px;letter-spacing:.01em}.hint{white-space:nowrap}.bill .m .hint{display:block}.bill.od .hint{color:var(--mu)}
+.chk button{width:32px;height:32px;padding:0;border-radius:50%;border:2px solid var(--bd);background:var(--card);font-size:16px;line-height:1;color:var(--card);transition:background .15s,border-color .15s}
+.chk button:hover{border-color:var(--ok);background:var(--card)}.chk .d,.chk .d:hover{background:var(--ok);border-color:var(--ok)}
+.done .n,.done .amt{text-decoration:line-through;color:var(--mu);font-weight:500}.done .av{opacity:.55}
+.tag{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:1px;background:var(--sunk);color:var(--mu)}
+.tag.late{background:var(--bads);color:var(--bad)}.tag.soon{background:var(--warns);color:var(--warn)}
+.pm{display:inline-block;line-height:1.5;font-size:12px;font-weight:600;padding:1px 8px 1px 7px;border-radius:999px;margin-left:6px;border:1px solid var(--bd);background:var(--card);color:var(--mu);vertical-align:1px}
+.pm::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-right:5px;vertical-align:1px}.pm.dd::before{background:var(--ac)}
+
+.bill.od{background:var(--bads);margin:0 -16px;padding:12px 16px}.bill.od .n,.bill.od .amt{color:var(--bad)}.card.od{border-color:var(--bad)}
+.leg{display:flex;gap:16px;flex-wrap:wrap;margin:8px 2px 10px;font-size:14px;color:var(--mu)}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.tbl{overflow-x:auto}.tbl table{border-collapse:collapse;width:100%;font-size:14px}.tbl th,.tbl td{padding:8px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}.tbl tr:last-child td{border-bottom:0}.tbl th:first-child,.tbl td:first-child{text-align:left}.tbl th{color:var(--mu);font-weight:600}
+
+/* manual overdue */
+.ovb{display:block;width:100%;margin-top:12px;background:var(--bads);border-color:var(--bad);color:var(--bad)}.ovb:hover{background:var(--bads);filter:brightness(.97)}.ovb.on{background:var(--card)}
+.lt tr.ovr td{background:var(--bads)}.lt tr.ovr .ln{color:var(--bad)}
+/* calendar */
+.cal{padding:10px}.cg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cg .dh{font-size:12px;font-weight:600;color:var(--mu);text-align:center;padding:2px 0 4px}
+.dc{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:62px;padding:5px 5px 4px;border:1px solid var(--bd);border-radius:8px;background:var(--card);text-align:left;font-weight:400;font-size:12px;overflow:hidden;min-width:0}
+.dc.empty{border:0;background:none}.dc:hover{background:var(--sunk)}
+.dc .dn{font:600 13px var(--f-head);line-height:1}
+.dc.today .dn{background:var(--ac);color:var(--card);border-radius:999px;padding:2px 6px;margin:-2px 0 0 -3px}
+.dc.sel{border-color:var(--ac);box-shadow:0 0 0 2px var(--acs)}.dc.hasov{border-color:var(--bad)}
+.dc .pay{font-size:9.5px;font-weight:700;line-height:1.3;color:var(--ac);background:var(--acs);border-radius:4px;padding:0 4px}html[data-view=pc] .dc .pay{position:absolute;top:6px;right:6px;font-size:10.5px}
+.dc .dots{display:flex;gap:2px;margin-top:auto}.dc .dots i{width:6px;height:6px;border-radius:50%;background:var(--ac)}.dc .dots i.p{background:var(--ok)}.dc .dots i.o{background:var(--bad)}
+.dc .ct{font-size:11px;font-weight:700;white-space:nowrap}.dc .ct.pd{color:var(--ok)}
+.dc .cns{display:none}
+html[data-view=pc] .dc{min-height:104px;padding:7px 8px}html[data-view=pc] .dc .dots{display:none}
+html[data-view=pc] .dc .cns{display:flex;flex-direction:column;gap:2px;width:100%;margin-top:4px}
+.cn{font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--acs);color:var(--tx);border-radius:4px;padding:1px 5px}.cn.pd{background:var(--oks);color:var(--mu);text-decoration:line-through}.cn.ov{background:var(--bads);color:var(--bad)}.cn.more{background:none;color:var(--mu);padding:0 2px}
+html[data-view=pc] .dc .ct{margin-top:auto}
+/* search */
+.srch{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:0 10px 0 12px;margin:0 0 12px;box-shadow:var(--sh)}
+.srch svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--mu);stroke-width:2;stroke-linecap:round}
+.srch input{flex:1;min-width:0;border:0;background:transparent;padding:11px 0;font-size:16px}.srch input:focus-visible{outline:none}.srch:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs)}
+.qn{margin:-6px 2px 10px;font-size:13px}.srch input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+html[data-view=pc] .srch{max-width:520px}
+/* all bills table */
+.lt{padding:0;overflow-x:auto}.lt table{border-collapse:collapse;width:100%;font-size:15px}
+.lt th{font-size:13px;font-weight:600;color:var(--mu);text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}
+.lt td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:top}.lt td:nth-child(2),.lt td:nth-child(3){white-space:nowrap}.lt tr:last-child td{border-bottom:0}
+.lt tbody tr:not(.gh){cursor:pointer}.lt tbody tr:not(.gh):hover td{background:var(--sunk)}
+.lt .r{text-align:right;white-space:nowrap;font-weight:700}.lt .ln{font-weight:600;display:block}.lt .sub{display:block;font-size:12.5px;color:var(--mu);margin-top:1px}
+.lt .gh td{background:var(--sunk);font:600 13px var(--f-head);color:var(--mu);padding:7px 12px}
+@media (max-width:480px){.lt table{font-size:14px}.lt th,.lt td{padding:9px 8px}.lt .gh td{padding:6px 8px}}
+/* dialogs */
+dialog{border:1px solid var(--bd);border-radius:16px;background:var(--card);color:var(--tx);width:min(92vw,460px);max-height:88vh;overflow:auto;padding:20px 20px 16px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+dialog::backdrop{background:var(--scrim)}
+dialog b{font:700 19px var(--f-head)}dialog label{display:block;font-size:13px;font-weight:600;color:var(--mu);margin-top:12px;margin-bottom:4px}dialog input,dialog select{width:100%}
+dialog .lnk{font-size:13px}
+
+/* PC layout */
+html[data-view=pc] body{padding-block:20px 110px}
+html[data-view=pc] .shell{max-width:1240px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:36px;align-items:start}
+html[data-view=pc] .mainnav{position:sticky;top:calc(20px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:2px;background:none;border:0;padding:0}
+html[data-view=pc] .mainnav .brand{display:flex;gap:10px;align-items:center;padding:4px 8px 18px}
+.brand .mk{width:34px;height:34px;border-radius:9px;background:var(--ac);color:var(--card);display:grid;place-items:center;flex:none}
+.brand .mk svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.brand b{display:block;font:700 17px/1.1 var(--f-head)}.brand small{display:block;color:var(--mu);font-size:13px}
+html[data-view=pc] .mainnav button{flex-direction:row;gap:10px;justify-content:flex-start;font-size:15px;padding:9px 10px;color:var(--mu)}
+html[data-view=pc] .mainnav button svg{padding:0;width:20px;height:20px}
+html[data-view=pc] .mainnav button:hover{background:var(--sunk);color:var(--tx)}
+html[data-view=pc] .mainnav button.on{background:var(--acs);color:var(--ac)}html[data-view=pc] .mainnav button.on svg{background:none}
+html[data-view=pc] .top h1{display:none}html[data-view=pc] .top{align-items:center;margin-bottom:10px}
+html[data-view=pc] .stat{padding:16px 20px}html[data-view=pc] .stat b{font-size:26px}
+html[data-view=pc] .bm.nav,html[data-view=pc] .nav2{max-width:440px}
+html[data-view=pc] .tabs{max-width:520px}
+html[data-view=pc] #v{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;align-items:start}
+html[data-view=pc] #v>*{grid-column:1/-1}html[data-view=pc] #v>.grp{grid-column:auto}html[data-view=pc] #v>.grp.wide{grid-column:1/-1}
+html[data-view=pc] .card svg{max-height:420px}
+html[data-view=pc] .chk button{width:28px;height:28px}
+html[data-view=pc] .bill:hover{background:var(--sunk);margin:0 -16px;padding:12px 16px}
+html[data-view=pc] .bill.od:hover{background:var(--bads)}
+html[data-view=pc] .fab{right:max(28px,calc((100vw - 1240px)/2 + 16px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:auto;height:48px;border-radius:12px;padding:0 20px;font-size:22px}
+html[data-view=pc] .fab::after{content:" Add";font-size:15px;font-weight:600;vertical-align:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<div class="shell">
+<nav class="mainnav" aria-label="Sections"><div class="brand"><span class="mk"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4.5" width="16" height="16" rx="2.5"/><path d="M4 9h16M8.5 3v3M15.5 3v3M9 14.5l2 2 4-4"/></svg></span><span><b>Bill Tracker</b><small id="brandsub">Person 1 &amp; Person 2</small></span></div><button type="button" id="t3" onclick="tab(3)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5h15.5A2.5 2.5 0 0 1 21 10v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18z"/><path d="M3 7.5 15 4v3.5"/><circle cx="16.5" cy="14" r="1.2"/></svg><span>Pay</span></button><button type="button" id="t0" onclick="tab(0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3.5"/></svg><span>Bills</span></button><button type="button" id="t5" onclick="tab(5)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg><span>All bills</span></button><button type="button" id="t1" onclick="tab(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.2"/><path d="M3 10h18M7 15h4"/></svg><span>Debts</span></button><button type="button" id="t4" onclick="tab(4)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18"/><path d="M6.5 20v-7M12 20V5M17.5 20v-10"/></svg><span>Chart</span></button><button type="button" id="t2" onclick="tab(2)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 16.5v3.5h15v-3.5"/></svg><span>Data</span></button></nav>
+<main class="main">
+<header class="top"><div style="min-width:0"><h1>Bill Tracker</h1><div class="fnow" id="fnow"></div><div class="mu" id="sy">Connecting…</div></div><div class="vsw" role="group" aria-label="Display"><button type="button" id="vp" onclick="setView('pc')">PC</button><button type="button" id="vm" onclick="setView('mobile')">Mobile</button></div></header>
+<div class="row sp bm nav">
+ <button type="button" onclick="mv(-1)" aria-label="Previous month">‹</button><b id="mon"></b><button type="button" onclick="mv(1)" aria-label="Next month">›</button>
+</div>
+<div class="stats bm"><div class="stat"><small>Due this month</small><b id="s1"></b></div><div class="stat"><small>Paid</small><b id="s2"></b></div><div class="stat"><small>Remaining</small><b id="s3"></b></div></div>
+<div class="bar bm"><i id="pb"></i></div>
+<div class="srch" id="srch" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="q" type="search" autocomplete="off" aria-label="Search" oninput="setQ(this.value)"><button type="button" class="lnk" id="qx" onclick="clearQ()" hidden>Clear</button></div><div class="mu qn" id="qcnt" hidden></div>
+<div id="v"></div>
+</main>
+</div>
+<button type="button" class="fab" onclick="T===3?fadd():edit()" aria-label="Add a bill">+</button>
+<dialog id="dlg"><form method="dialog" id="f" onsubmit="save();return false">
+<b id="dt">Bill</b>
+<label>Name</label><input id="fn">
+<label>Category <button type="button" class="lnk" onclick="manage('cats')">Edit list</button></label><select id="fc" onchange="fsel(this,'fcn')"></select><input id="fcn" placeholder="New category name" style="display:none;margin-top:6px">
+<label>Amount</label><input id="fa" type="number" step="0.01">
+<label>Frequency <button type="button" class="lnk" onclick="manage('freqs')">Edit list</button></label><select id="ff" onchange="ffc()"></select><div id="ffn" style="display:none;margin-top:6px"><div class="row"><input id="ffnn" placeholder="Name, e.g. Quarterly" style="flex:1;min-width:0"><select id="ffev" style="width:auto"><option value="2">every 2 months</option><option value="3" selected>every 3 months</option><option value="4">every 4 months</option><option value="5">every 5 months</option><option value="6">every 6 months</option><option value="7">every 7 months</option><option value="8">every 8 months</option><option value="9">every 9 months</option><option value="10">every 10 months</option><option value="11">every 11 months</option></select></div></div><div id="dtrow" style="display:none"><label>Date</label><input id="fdt" type="date"></div>
+<div id="dayrow"><label id="fdl">Due day (optional)</label><div class="row"><input id="fd" type="number" min="1" max="31" placeholder="Day"><select id="fm"></select></div></div>
+<div id="endrow"><label>End date (optional)</label><div class="row"><input id="fend" type="date" style="flex:1;min-width:0"><button type="button" onclick="$('fend').value=''">Clear</button></div></div>
+<label>Paid from <button type="button" class="lnk" onclick="manage('accts')">Edit list</button></label><select id="fp" onchange="fsel(this,'fpn')"></select><input id="fpn" placeholder="New account or card name" style="display:none;margin-top:6px"><label>Payment</label><select id="fdd"><option value="0">Manually</option><option value="1">Direct debit</option></select><label>Whose bill?</label><select id="fo"><option value="Joint">Joint</option><option value="Hayden">Person 1</option><option value="Jordyn">Person 2</option></select>
+<label>Priority</label><select id="fpr"><option value="E">Essential</option><option value="F">Flexible (can wait)</option></select><label>Debt balance (optional)</label><input id="fb" type="number" step="0.01" inputmode="decimal"><label>Interest rate % (optional)</label><input id="fir" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 21.99">
+<div class="row sp" style="margin-top:14px"><button type="button" class="x" id="del" onclick="rm(this)">Delete</button><div class="row"><button type="button" onclick="dlg.close()">Cancel</button><button type="submit" class="p">Save</button></div></div>
+</form></dialog>
+<script>
+let VP='auto';try{VP=localStorage.getItem('bt.view')||'auto'}catch(e){}
+function curView(){return VP==='pc'||VP==='mobile'?VP:((typeof innerWidth!=='undefined'&&innerWidth>=900)?'pc':'mobile')}
+function applyView(){try{const v=curView();document.documentElement.dataset.view=v;const a=document.getElementById('vp'),b=document.getElementById('vm');if(a&&b){a.className=v==='pc'?'on':'';b.className=v==='mobile'?'on':''}}catch(e){}}
+function setView(v){VP=v;try{localStorage.setItem('bt.view',v)}catch(e){}applyView()}
+try{addEventListener('resize',()=>{if(VP==='auto')applyView()})}catch(e){}
+applyView();
+const K='billtracker.blank.v1',MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const N={Weekly:4,Fortnight:2,Month:1,Annual:1,Once:1};
+const seed=[].map((r,i)=>({id:'b'+i,cat:r[0],name:r[1],amt:r[2]||0,freq:r[3],day:r[4]||0,acct:r[5]||'',bal:r[6]||0,mo:r[7]||0,o:r[8],dd:!!r[9]}));
+const DEFN=['Person 1','Person 2'];
+const PN=()=>({h:(S.names&&S.names.h)||DEFN[0],j:(S.names&&S.names.j)||DEFN[1]});
+const who=o=>o==='Hayden'?PN().h:o==='Jordyn'?PN().j:(o||'Joint');
+function saveNames(){const a=$('nm1').value.trim(),b=$('nm2').value.trim();S.names={h:a||DEFN[0],j:b||DEFN[1]};persist();draw();stat('Names saved');setTimeout(()=>stat(okMsg()),3000)}
+const fresh=()=>({bills:[],paid:{},lists:{cats:['Household','Utilities','Insurance','Subscriptions','Credit cards & loans','Transport','Personal','Savings & extras'],accts:[]}});
+let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!S||!S.bills)S=fresh();
+let NOWF=()=>new Date();let now=NOWF();let Y=now.getFullYear(),M=now.getMonth(),T=3,cur=null;
+const $=i=>document.getElementById(i),fm=n=>'$'+(+n||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+let DB=null,lastW='',pt;
+function stat(t){const e=$('sy');if(e)e.textContent=t}
+const DDN=['optus','xbox','netflix','disney','private health','funky','microsoft 365','contents insurance','zip money','union fees','social club','nrma','amazon','squarespace'];
+const isDD=x=>x.dd===undefined?DDN.some(k=>(x.name||x.n||'').toLowerCase().includes(k)):!!x.dd;
+const pill=(x,fn)=>'<span class="pm'+(isDD(x)?' dd':'')+'">'+(isDD(x)?'Direct debit':'Manual')+'</span>';
+let LS='cat';function sls(v){LS=v;draw()}
+const ordd=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
+const FQ={Weekly:'Weekly',Fortnight:'Fortnightly',Month:'Monthly',Annual:'Yearly',Once:'One-off'},FQB=['Weekly','Fortnight','Month','Annual','Once'];
+const fqCus=()=>((S.lists||{}).freqs||[]),fqLbl=k=>(((S.lists||{}).fql||{})[k])||FQ[k]||k;
+const fql=b=>b.fqn||(b.freq==='Annual'&&b.ev&&b.ev!==12?'Every '+b.ev+' months':fqLbl(b.freq));
+const inMo=(b,m1)=>{if(b.freq!=='Annual')return true;if(!b.mo)return false;const e=b.ev||12;return ((m1-b.mo)%e+e)%e===0};
+const evMonths=b=>{const o=[];for(let m=0;m<12;m++)if(inMo(b,m+1))o.push(MN[m]);return o};
+function nextDue(b){const d=nextDue0(b),e=endD(b);return d&&e&&d>e?null:d}
+function nextDue0(b){const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ if(b.freq==='Once')return b.dt?pd(b.dt):null;
+ if(b.freq==='Month'&&b.day){for(let i=0;i<3;i++){const m=new Date(t.getFullYear(),t.getMonth()+i,1),d=new Date(m.getFullYear(),m.getMonth(),Math.min(b.day,dim(m)));if(d>=t)return d}}
+ if(b.freq==='Annual'&&b.mo){for(let i=0;i<14;i++){const m=new Date(t.getFullYear(),t.getMonth()+i,1);if(!inMo(b,m.getMonth()+1))continue;const d=new Date(m.getFullYear(),m.getMonth(),Math.min(b.day||1,dim(m)));if(d>=t)return d}}
+ return null}
+function dueText(b){if(b.freq==='Weekly')return 'Every week';if(b.freq==='Fortnight')return 'Every pay';if(b.freq==='Once')return b.dt?pd(b.dt).getDate()+' '+MN[pd(b.dt).getMonth()]+' '+pd(b.dt).getFullYear():'No date';
+ if(b.freq==='Annual')return b.mo?(b.day||1)+' '+evMonths(b).join('/'):'Pick a month';return b.day?ordd(b.day):'Any day'}
+const perMonth=b=>b.freq==='Weekly'?b.amt*52/12:b.freq==='Fortnight'?b.amt*26/12:b.freq==='Month'?b.amt:b.freq==='Annual'?b.amt/(b.ev||12):0;
+function listView(){const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const B0=S.bills.slice(),B=qf(B0,false),past=b=>(b.freq==='Once'&&b.dt&&pd(b.dt)<t)||ended(b);
+ const reg=S.bills.filter(b=>b.freq!=='Once'&&!ended(b)),mon=reg.reduce((a,b)=>a+perMonth(b),0),oo=B.filter(b=>b.freq==='Once'&&!past(b));
+ const tabsH='<div class="tabs">'+[['cat','By category'],['due','By next due date'],['cal','Calendar']].map(x=>'<button class="'+(LS===x[0]?'on':'')+'" onclick="sls(\''+x[0]+'\')">'+x[1]+'</button>').join('')+'</div>';
+ if(LS==='cal')return tabsH+(B0.length&&!B.length?noMatch():calView(B));
+ let h='<div class="stats plain"><div class="stat"><small>Regular bills</small><b>'+reg.length+'</b></div><div class="stat"><small>About per month</small><b>'+fm(mon)+'</b></div><div class="stat"><small>Upcoming one-offs</small><b>'+fm(oo.reduce((a,b)=>a+b.amt,0))+'</b></div></div>';
+ h+=tabsH;
+ const row=b=>{const nd=nextDue(b),ov=hasOv(b);return '<tr'+(ov?' class="ovr"':'')+' onclick="edit(\''+b.id+'\')"><td><span class="ln">'+esc(b.name)+(ov?'<span class="tag late">overdue</span>':'')+'</span><span class="sub">'+esc(who(b.o))+' · '+(priOf(b)==='F'?'Flexible · ':'')+(isDD(b)?'Direct debit':'Manual')+(b.acct&&!/^(manual|direct debits?)$/i.test(b.acct.trim())?' · '+esc(b.acct):'')+'</span></td><td>'+fql(b)+'</td><td>'+dueText(b)+(nd&&b.freq!=='Once'?'<span class="sub">Next '+nd.getDate()+' '+MN[nd.getMonth()]+'</span>':'')+(b.end&&b.freq!=='Once'?'<span class="sub">'+(ended(b)?'Ended ':'Ends ')+endTxt(b)+'</span>':'')+'</td><td class="r">'+(b.amt?fm(b.amt):'–')+'</td></tr>'};
+ const rowP=b=>ended(b)?row(b).replace('</span></td><td>','</span><span class="tag">Ended</span></td><td>'):past(b)?row(b).replace('</td><td>One-off','<span class="tag">Past</span></td><td>One-off'):row(b);
+ let body='';
+ if(LS==='cat'){const g={};B.forEach(b=>(g[b.cat]=g[b.cat]||[]).push(b));for(const c in g)body+='<tr class="gh"><td colspan="4">'+esc(c)+'</td></tr>'+g[c].sort((a,b)=>a.name.localeCompare(b.name)).map(rowP).join('')}
+ else{const key=b=>{if(past(b))return 9e15+pd(b.freq==='Once'?b.dt:b.end).getTime();const d=nextDue(b);return d?d.getTime():(b.freq==='Weekly'||b.freq==='Fortnight')?t.getTime()-1:8e15};body=B.slice().sort((a,b)=>key(a)-key(b)||a.name.localeCompare(b.name)).map(rowP).join('')}
+ if(B0.length&&!B.length)return h+noMatch();return h+'<div class="card lt"><table><thead><tr><th>Bill</th><th>How often</th><th>Due</th><th class="r">Amount</th></tr></thead><tbody>'+body+'</tbody></table></div><p class="mu">Tap a bill to change it. "About per month" averages weekly, fortnightly and yearly bills into a monthly figure; one-offs and bills that have ended are not included.</p>'}
+const FLEXW=/allowance|saving|trip|holiday|gift|spotify|netflix|disney|xbox|kayo|stan\b|binge|prime|paramount|subscription|fun|treat|extra/i;
+function priOf(b){if(b.pri)return b.pri;return (/saving|extra|subscription/i.test(b.cat||'')||FLEXW.test(b.name||''))?'F':'E'}
+const isFlex=x=>{const b=bl(x)||S.bills.find(q=>q.id===x.id);return b?priOf(b)==='F':false};
+// debts: balance = what you entered minus payments ticked since then
+function debtPaid(b){let s2=0;const fp=fpAll();for(const k in fp)fp[k].items.forEach(r=>{if(r.bid===b.id&&r.d&&r.a>0&&r.pt&&r.pt>=(b.balAt||0))s2+=r.a});return Math.round(s2*100)/100}
+function debtNow(b){return b.bal>0?Math.max(0,Math.round((b.bal-debtPaid(b))*100)/100):0}
+function payoff(b){const B=debtNow(b),P=perMonth(b);if(!(B>0))return{m:0};if(!(P>0))return{m:null,why:'no regular payment set'};
+ const r=(b.rate||0)/1200;if(r>0){if(P<=B*r)return{m:null,why:'payment does not cover the interest'};const m=Math.ceil(-Math.log(1-r*B/P)/Math.log(1+r));return{m,int:Math.max(0,m*P-B)}}
+ return{m:Math.ceil(B/P-1e-9)}}
+const mAhead=m=>{const d=new Date(now.getFullYear(),now.getMonth()+m,1);return MN[d.getMonth()]+' '+d.getFullYear()};
+function debtsView(){const D=S.bills.filter(b=>b.bal>0||debtNow(b)>0);if(!D.length)return '<div class="card" style="padding:16px"><b class="amt">No debts yet</b><p class="mu">Open a bill such as a credit card or loan, and enter its balance owing. Its balance will go down each time you tick a payment.</p></div>';
+ const tot=D.reduce((a,b)=>a+debtNow(b),0),paid=D.reduce((a,b)=>a+Math.max(0,(b.bal0||b.bal)-debtNow(b)),0),P=D.map(payoff),known=P.filter(x=>x.m!==null),last=known.length===P.length?Math.max(0,...P.map(x=>x.m)):null;
+ let h='<div class="stats plain"><div class="stat"><small>Total owing</small><b>'+fm(tot)+'</b></div><div class="stat"><small>Paid off so far</small><b>'+fm(paid)+'</b></div><div class="stat"><small>Debt-free by</small><b>'+(last===null?'–':last===0?'Now':mAhead(last))+'</b></div></div>';
+ const live=D.filter(b=>debtNow(b)>0),rated=live.filter(b=>b.rate>0);let tip='';
+ if(live.length>1){if(rated.length===live.length){const t=live.slice().sort((a,b)=>b.rate-a.rate)[0];tip='Put any extra money on <b>'+esc(t.name)+'</b> first. At '+t.rate+'% it costs you the most in interest. Keep paying the minimum on the others.'}
+  else{const t=live.slice().sort((a,b)=>debtNow(a)-debtNow(b))[0];tip='Put any extra money on <b>'+esc(t.name)+'</b> first. It is the smallest balance ('+fm(debtNow(t))+'), so it will be gone soonest and free up its '+fm(perMonth(t))+' a month. Add interest rates to your debts to see which one costs you most.'}}
+ if(tip)h+='<div class="card" style="padding:12px 16px;border-color:var(--ac)"><div style="font:600 15px var(--f-head);margin-bottom:4px">Which debt to pay off first</div><div style="font-size:15px">'+tip+'</div></div>';
+ h+='<div class="card">';D.slice().sort((a,b)=>debtNow(b)-debtNow(a)).forEach((b,i)=>{const n=debtNow(b),st=b.bal0||b.bal,pc=st>0?Math.min(100,Math.max(0,(st-n)/st*100)):0,po=payoff(b);
+  const when=n<=0?'<span style="color:var(--ok);font-weight:600">Paid off</span>':po.m===null?'<span style="color:var(--bad);font-weight:600">'+(po.why==='no regular payment set'?'Set a regular payment to see a payoff date':'Payment does not cover the interest')+'</span>':'Paid off about '+mAhead(po.m)+' ('+po.m+' month'+(po.m===1?'':'s')+')'+(po.int?' · about '+fm(po.int)+' interest':'');
+  h+='<div class="bill" style="flex-wrap:wrap" onclick="edit(\''+b.id+'\')">'+av(b.cat)+'<div class="m"><div class="n">'+esc(b.name)+'</div><div class="s">'+esc(who(b.o))+(perMonth(b)?' · '+fm(perMonth(b))+'/month':'')+(b.rate?' · '+b.rate+'% a year':'')+'</div><div class="s">'+when+'</div></div><div class="amt">'+fm(n)+'</div>'
+   +'<div style="flex-basis:100%;padding-left:46px"><div class="bar" style="margin:6px 0 2px"><i style="width:'+pc.toFixed(1)+'%"></i></div><div class="s" style="font-size:12.5px;color:var(--mu)">'+fm(st-n>0?st-n:0)+' paid of '+fm(st)+'</div></div></div>'});
+ return h+'</div><p class="mu">Balances go down when you tick a payment on the Pay or Bills tab, and go back up if you untick it. Payoff dates use each bill\'s regular amount'+(D.some(b=>!b.rate)?'; debts without an interest rate are shown before interest':'')+'. Tap a debt to update its balance from your statement.</p>'}
+// short fortnight: which flexible bills to move
+let SFsel=null,SFkey='';
+function shortPlan(A,short){const its=A.items.filter(r=>r.a>0&&!r.d&&!r.co&&!r.ovd&&isFlex(r)),rank=r=>{const b=bl(r)||{};return /saving|extra/i.test(b.cat||'')?0:/allowance/i.test(b.name||'')?1:/subscription/i.test(b.cat||'')?2:3};
+ its.sort((a,b)=>rank(a)-rank(b)||b.a-a.a);const key=fkey(F)+'|'+short.toFixed(2)+'|'+its.map(r=>r.id).join(',');
+ if(SFkey!==key){SFkey=key;SFsel=new Set();let got=0;its.forEach(r=>{if(got<short-0.005){SFsel.add(r.id);got+=r.a}})}return its}
+function sfT(id){SFsel.has(id)?SFsel.delete(id):SFsel.add(id);const k=SFkey;draw();SFkey=k}
+function sfMove(){const A=fcu();if(!A||!SFsel)return;const ids=[...SFsel];let n=0;ids.forEach(id=>{const x=A.items.find(r=>r.id===id);if(!x||x.d||!(x.a>0))return;const nh=nextHas(x);moveNext(x,nh?'add':undefined);n++});SFkey='';stat('Moved '+n+' bill'+(n===1?'':'s')+' to '+fl(F+1));setTimeout(()=>stat(okMsg()),4000)}
+function shortCard(A,left,pp){if(left>=-0.005)return'';if(!(pp>0))return '<div class="card" style="padding:12px 16px">Enter this fortnight\'s pay above to see if you are short and what you could move.</div>';
+ const short=-left,its=shortPlan(A,short),sel=its.filter(r=>SFsel.has(r.id)),cov=sel.reduce((a,r)=>a+r.a,0),all=its.reduce((a,r)=>a+r.a,0);
+ let h='<div class="grp wide"><div class="cat row sp" style="color:var(--bad)"><span>Short by '+fm(short)+' – what could wait</span><span></span></div><div class="card" style="border-color:var(--bad);padding:10px 16px">';
+ if(!its.length)return h+'<p style="margin:6px 0">No flexible bills left to move this fortnight. Lower an amount (tap it) or mark more bills as Flexible.</p></div></div>';
+ h+='<p class="mu" style="margin:4px 0 6px">Flexible bills you could move to '+fl(F+1)+'. Essential bills stay put.</p>';
+ its.forEach(r=>{const v=vw(r),on=SFsel.has(r.id);h+='<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer"><input type="checkbox" id="sf_'+r.id+'" '+(on?'checked ':'')+'onchange="sfT(\''+r.id+'\')" style="width:20px;height:20px;accent-color:var(--ac)"><span style="flex:1;min-width:0">'+esc(v.n)+'<span class="sub" style="display:block;font-size:12.5px;color:var(--mu)">'+esc(who(v.o))+(nextHas(r)?' · next fortnight already has it, amounts are added together':'')+'</span></span><b class="amt">'+fm(r.a)+'</b></label>'});
+ const gap=short-cov;h+='<div class="row sp" style="flex-wrap:wrap;margin:10px 0 4px"><span style="font-size:15px">'+(sel.length?'Moving '+sel.length+' bill'+(sel.length===1?'':'s')+' frees '+fm(cov)+(gap>0.005?', still '+fm(gap)+' short':', which covers it'):'Tick the bills you want to move')+'</span><button class="p" '+(sel.length?'':'disabled ')+'onclick="sfMove()">Move to next fortnight</button></div>';
+ if(all<short-0.005)h+='<p class="mu" style="margin:4px 0">Even moving every flexible bill leaves you '+fm(short-all)+' short. Lower an amount (tap it) or ask the lender for a smaller payment this time.</p>';
+ return h+'</div></div>'}
+const Q={3:'',0:'',5:''};let QC=null;
+function setQ(v){Q[T]=v;draw()}
+function clearQ(){Q[T]='';const q=$('q');if(q){q.value='';q.focus()}draw()}
+function qtext(b,r){const v=r?vw(r):null,bb=b||(r&&bl(r))||{};return [v?v.n:bb.name,v?v.c:bb.cat,who(v?v.o:bb.o),bb.acct,isDD(v||bb)?'direct debit dd':'manual',priOf(bb)==='F'?'flexible':'essential',fql(bb)||'',r?fm(r.a)+' '+r.a:fm(bb.amt)+' '+bb.amt].join(' ').toLowerCase()}
+function qmatch(t){const q=(Q[T]||'').trim().toLowerCase();if(!q)return true;return q.split(/\s+/).every(w=>t.includes(w.replace(/^\$/,'')))}
+function qf(arr,isItem){const q=(Q[T]||'').trim();if(!q){QC=null;return arr}const out=arr.filter(x=>qmatch(isItem?qtext(null,x):qtext(x)));QC={n:out.length,of:arr.length};return out}
+const noMatch=()=>'<div class="card" style="padding:14px 16px">No bills match “'+esc(Q[T].trim())+'”. <button type="button" class="lnk" onclick="clearQ()">Clear search</button></div>';
+function btm(id){const x=S.bills.find(r=>r.id===id);x.dd=!isDD(x);persist();draw()}
+function ftm(id){const r=fcu().items.find(q=>q.id===id);(bl(r)||r).dd=!isDD(vw(r));persist();draw()}
+const hue=c=>{let h=0;for(const x of c)h=(h*31+x.charCodeAt(0))%360;return h};
+const av=c=>'<div class="av" style="--h:'+hue(c)+'">'+c.charAt(0)+'</div>';
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const NEWV='__new__',ACCT0=['Joint account','Everyday account','Bills account','Credit card','Savings account'];
+const uniq=a=>[...new Set(a.filter(Boolean))];
+const hid=k=>((S.lists||{}).hide||{})[k]||[];
+const usedBy=(k,v)=>S.bills.filter(b=>(k==='cats'?b.cat:b.acct)===v).length;
+const catList=()=>uniq(S.bills.map(b=>b.cat).concat(((S.lists||{}).cats||[]).filter(x=>!hid('cats').includes(x))));
+const acctList=()=>uniq(ACCT0.filter(x=>!hid('accts').includes(x)).concat(S.bills.map(b=>b.acct),((S.lists||{}).accts||[]).filter(x=>!hid('accts').includes(x))));
+function addList(k,v){if(!v)return;S.lists=S.lists||{cats:[],accts:[]};S.lists[k]=S.lists[k]||[];if(!S.lists[k].includes(v))S.lists[k].push(v);if(S.lists.hide&&S.lists.hide[k])S.lists.hide[k]=S.lists.hide[k].filter(x=>x!==v)}
+function fill(sid,nid,list,v,ph){const e=$(sid);e.innerHTML=(ph!=null?'<option value="">'+ph+'</option>':'')+list.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'<option value="'+NEWV+'">+ Add new…</option>';e.value=v||'';if(e.value!==(v||''))e.selectedIndex=0;const n=$(nid);n.value='';n.style.display='none'}
+let mlk='',mls=[];
+function manage(k){mlk=k;$('mt').textContent=k==='cats'?'Edit categories':k==='freqs'?'Edit frequencies':'Edit accounts and cards';mdraw();$('md').showModal()}
+function mItems(){if(mlk==='freqs'){const out=[];FQB.forEach(k=>{if(!hid('freqs').includes(k))out.push({v:k,l:fqLbl(k),u:S.bills.filter(b=>b.freq===k&&!b.ev).length,bi:1})});fqCus().forEach(c=>out.push({v:'c:'+c.n,l:c.n,x:'every '+c.ev+' months',u:S.bills.filter(b=>b.fqn===c.n).length}));return out}
+ return (mlk==='cats'?catList():acctList()).map(v=>({v,l:v,u:usedBy(mlk,v)}))}
+function mdraw(){mls=mItems();$('ml').innerHTML=mls.length?mls.map((it,i)=>{const u=it.u;return '<div class="bill" style="padding:9px 0"><div class="m"><div class="n" style="font-weight:500">'+esc(it.l)+'</div><div class="s">'+(it.x?esc(it.x)+' · ':'')+(u?'Used by '+u+' bill'+(u===1?'':'s'):'Not used')+'</div></div><div class="row" style="gap:6px;flex-wrap:nowrap"><button onclick="renList('+i+')">Rename</button>'+(u?'':'<button class="x" onclick="remList('+i+')">Remove</button>')+'</div></div>'}).join(''):'<p class="mu">Nothing in this list.</p>'}
+function hideL(k,v){S.lists=S.lists||{};S.lists.hide=S.lists.hide||{};S.lists.hide[k]=S.lists.hide[k]||[];if(!S.lists.hide[k].includes(v))S.lists.hide[k].push(v)}
+function renList(i){const it=mls[i];if(!it)return;ask('Rename “'+it.l+'”',{name:1,noamt:1,label:it.u?'New name (the '+it.u+' bill'+(it.u===1?'':'s')+' using it change too)':'New name'},n=>{n=(n||'').trim();if(!n||n===it.l)return;S.lists=S.lists||{cats:[],accts:[]};
+ if(mlk==='freqs'){if(it.bi){S.lists.fql=S.lists.fql||{};S.lists.fql[it.v]=n}else{const old=it.l;if(fqCus().some(c=>c.n.toLowerCase()===n.toLowerCase()&&c.n!==old)){stat('There is already a frequency called '+n);return}fqCus().forEach(c=>{if(c.n===old)c.n=n});S.bills.forEach(b=>{if(b.fqn===old)b.fqn=n});const fv=$('ff').value;if(fv==='c:'+old){fillFq({freq:'Annual',ev:(FQO[fv]||{}).ev,fqn:n});persist();mdraw();draw();return}}}
+ else{const old=it.v,f=mlk==='cats'?'cat':'acct';S.bills.forEach(b=>{if(b[f]===old)b[f]=n});if(mlk==='cats')Object.values(fpAll()).forEach(fp=>fp.items.forEach(r=>{if(r.c===old)r.c=n}));S.lists[mlk]=(S.lists[mlk]||[]).filter(x=>x!==old);hideL(mlk,old);addList(mlk,n)}
+ persist();mdraw();mrefill(mlk==='freqs'?null:{o:it.v,n});draw();stat('Renamed to '+n);setTimeout(()=>stat(okMsg()),3000)});$('qn').value=it.l}
+function remList(i){const it=mls[i];if(!it||it.u)return;if(mlk==='freqs'){if(it.bi)hideL('freqs',it.v);else{S.lists.freqs=fqCus().filter(c=>'c:'+c.n!==it.v)}persist();mdraw();mrefill();return}const v=it.v;S.lists=S.lists||{};S.lists[mlk]=(S.lists[mlk]||[]).filter(x=>x!==v);S.lists.hide=S.lists.hide||{};S.lists.hide[mlk]=S.lists.hide[mlk]||[];if(!S.lists.hide[mlk].includes(v))S.lists.hide[mlk].push(v);persist();mdraw();mrefill()}
+function mrefill(rn){let c=$('fc').value,a=$('fp').value;if(rn){if(c===rn.o)c=rn.n;if(a===rn.o)a=rn.n}fill('fc','fcn',catList(),c===NEWV?'':c);fill('fp','fpn',acctList(),a===NEWV?'':a,'Not set');const fv=$('ff').value;if(fv!==NEWV){const q=FQO[fv]||{freq:fv||'Month'};fillFq(q)}}
+let FQO={};
+function fillFq(b){const e=$('ff'),cur=b.fqn?'c:'+b.fqn:(b.freq||'Month');FQO={};let h='';const add=(v,l,q)=>{FQO[v]=q;h+='<option value="'+esc(v)+'">'+esc(l)+'</option>'};
+ FQB.forEach(k=>{if(k==='Once'){fqCus().forEach(c=>add('c:'+c.n,c.n+' (every '+c.ev+' months)',{freq:'Annual',ev:c.ev,fqn:c.n}));if(b.fqn&&!fqCus().some(c=>c.n===b.fqn))add(cur,b.fqn,{freq:'Annual',ev:b.ev,fqn:b.fqn})}if(!hid('freqs').includes(k)||cur===k)add(k,k==='Once'?fqLbl(k)+' (single payment)':fqLbl(k),{freq:k})});
+ h+='<option value="'+NEWV+'">+ Add new…</option>';e.innerHTML=h;e.value=cur;if(e.value!==cur)e.selectedIndex=0;$('ffnn').value='';$('ffev').value='3';ffc()}
+function fqRead(){const v=$('ff').value;if(v===NEWV){const ev=+$('ffev').value||3,n=$('ffnn').value.trim()||('Every '+ev+' months');S.lists=S.lists||{cats:[],accts:[]};S.lists.freqs=S.lists.freqs||[];const ex=S.lists.freqs.find(c=>c.n.toLowerCase()===n.toLowerCase());if(ex)return {freq:'Annual',ev:ex.ev,fqn:ex.n};S.lists.freqs.push({n,ev});return {freq:'Annual',ev,fqn:n}}return FQO[v]||{freq:v}}
+function ffc(){const v=$('ff').value,o=v==='Once',nw=v===NEWV,q=FQO[v]||{},ann=nw||q.freq==='Annual';$('dtrow').style.display=o?'':'none';$('dayrow').style.display=o?'none':'';$('endrow').style.display=o?'none':'';$('ffn').style.display=nw?'':'none';if(nw)$('ffnn').focus();
+ $('fdl').textContent=ann?(q.ev||nw?'Due day and first month':'Due day and month'):'Due day (optional)';$('fm').style.display=ann?'':'none'}
+function fsel(sel,nid){const n=$(nid);n.style.display=sel.value===NEWV?'':'none';if(sel.value===NEWV)n.focus()}
+const val=(sid,nid)=>{const v=$(sid).value;return v===NEWV?$(nid).value.trim():v};
+function persist(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}push()}
+function push(){if(!DB)return;clearTimeout(pt);stat('Saving…');pt=setTimeout(()=>{const j=JSON.stringify(S);lastW=j;DB.set({json:j,ts:Date.now()}).then(()=>stat('Synced across devices')).catch(()=>stat('Sync failed – saved on this device'))},600)}
+
+let MODE='local';
+const CODE=(()=>{try{return localStorage.getItem('bt.code')||''}catch(e){return ''}})();
+const okMsg=()=>MODE==='local'?'Saved on this device only':'Synced across devices';
+const FBC=()=>{const c=(typeof window!=='undefined'&&window.FIREBASE_CONFIG)||null;return c&&c.apiKey&&!/^PASTE/.test(c.apiKey)?c:null};
+function useRemote(j){if(!j||j===lastW)return;try{const d=JSON.parse(j);if(d.bills){S=d;lastW=j;try{localStorage.setItem(K,j)}catch(e){}initAn();migrate();draw()}}catch(e){}}
+async function startFirebase(){const cfg=FBC();
+if(!cfg){stat('Saved on this device only');return}
+if(!CODE){stat('Saved on this device – add a sync code in Data to sync');return}
+stat('Connecting…');
+try{const B='https://www.gstatic.com/firebasejs/10.12.2/';
+const [A,Au,Fs]=window.__FBMOCK||await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+const app=A.initializeApp(cfg);await Au.signInAnonymously(Au.getAuth(app));
+const ref=Fs.doc(Fs.getFirestore(app),'households',CODE);
+MODE='firebase';DB={set:d=>Fs.setDoc(ref,d)};
+Fs.onSnapshot(ref,snap=>{if(snap.exists())useRemote(snap.data().json);else push();stat('Synced across devices')},()=>stat('Sync error – changes saved on this device'))}
+catch(e){DB=null;MODE='local';stat('Sync failed – changes saved on this device')}}
+(async()=>{try{if(typeof claude!=='undefined'){const c=await claude.use('db');if(c){const r=c.doc('tracker/state');MODE='claude';
+r.onSnapshot(snap=>{DB=r;if(snap.exists)useRemote(snap.data().json);else push();stat('Synced across devices')},()=>stat('Sync error – changes saved on this device'));return}}}catch(e){}
+startFirebase()})();
+function setCode(){ask('Sync code',{name:1,noamt:1,label:'Type the same private code on every device (6 or more characters)'},n=>{n=(n||'').trim().toLowerCase().replace(/\s+/g,'-');if(n.length<6){stat('Sync code must be 6 or more characters');return}try{localStorage.setItem('bt.code',n)}catch(e){}location.reload()})}
+function noCode(b){if(!b.dataset.c){b.dataset.c=1;b.textContent='Tap again to stop syncing';return}try{localStorage.removeItem('bt.code')}catch(e){}location.reload()}
+const mk=()=>Y+'-'+M;
+const active=b=>(endD(b)&&endD(b)<new Date(Y,M,1)&&!moi(b,mk()).length)?false:b.freq==='Once'?!!(b.dt&&pd(b.dt).getFullYear()===Y&&pd(b.dt).getMonth()===M):(b.freq!=='Annual'||!b.mo||inMo(b,M+1));
+const cnt=b=>b.amt?N[b.freq]:0;
+function paidAmt(b,k){const m=moi(b,k);if(m.length)return m.reduce((a,r)=>a+(r.d?r.a:0),0);return b.amt*Math.min((S.paid[k]||{})[b.id]||0,cnt(b))}
+const done=(b,k)=>{k=k||mk();const m=moi(b,k);if(m.length)return m.filter(r=>r.d).length;return Math.min((S.paid[k]||{})[b.id]||0,cnt(b))};
+function mv(d){M+=d;if(M<0){M=11;Y--}if(M>11){M=0;Y++}draw()}
+function tab(t){T=t;draw()}
+function setPaid(r,v){v=!!v;if(v&&!r.d)r.pt=Date.now();if(!v)delete r.pt;if(v)delete r.ovd;r.d=v}
+const isOv=r=>!r.d&&r.a>0&&(r.co||r.ovd);
+function hasOv(b,k){const fp=fpAll();for(const q in fp)for(const r of fp[q].items)if(r.bid===b.id&&isOv(r)&&(!k||ymk(odate(r,q))===k))return true;return false}
+function payPart(x,v){const A=fcu();if(!A||!A.items.includes(x))return;const nm=vw(x).n;
+ if(v>=x.a-0.005){if(v>x.a)x.a=v;setPaid(x,true);mergeGrp(A);persist();draw();stat(nm+' paid in full');setTimeout(()=>stat(okMsg()),3000);return}
+ const g=x.grp||('g'+Date.now()),part=Object.assign({},x,{id:x.id+'~p',a:v,d:false,grp:g,part:1});delete part.ovd;delete part.rest;
+ x.grp=g;x.of=x.of||x.a;x.a=Math.round((x.a-v)*100)/100;x.rest=1;x.ovd=x.ovd||Date.now();
+ pushU(A,part);setPaid(part,true);persist();draw();stat('Paid '+fm(v)+' of '+nm+'. '+fm(x.a)+' left, marked overdue');setTimeout(()=>stat(okMsg()),4000)}
+function mlab(mi){const out=[],seen={};mi.forEach(r=>{if(!r.grp){out.push(fm(r.a));return}if(seen[r.grp])return;const g=mi.filter(q=>q.grp===r.grp),t=g.reduce((s2,q)=>s2+q.a,0),pd2=g.filter(q=>q.d).reduce((s2,q)=>s2+q.a,0);seen[r.grp]=1;out.push(fm(t)+(pd2<t-0.005?' ('+fm(pd2)+' paid, '+fm(t-pd2)+' left)':''))});return out.join(' + ')}
+function mergeGrp(A){let ch=0;A.items.filter(r=>r.rest&&r.d&&!r.co&&r.grp).forEach(r=>{const g=A.items.filter(q=>q.grp===r.grp);if(!g.some(q=>q.part)||!g.every(q=>q.d))return;const b=bl(r),ts=g.map(q=>q.pt||0),lo=Math.min(...ts),hi=Math.max(...ts);if(b&&b.balAt&&b.balAt>lo&&b.balAt<=hi)return;r.a=Math.round(g.reduce((s2,q)=>s2+q.a,0)*100)/100;r.pt=hi;r.pp=g.length;delete r.grp;delete r.rest;delete r.of;delete r.ovd;A.items=A.items.filter(q=>q===r||!g.includes(q));ch++});return ch}
+function tOv(x){if(x.ovd)delete x.ovd;else x.ovd=Date.now();persist();draw();stat(x.ovd?'Marked '+vw(x).n+' as overdue':'Overdue mark removed');setTimeout(()=>stat(okMsg()),3000)}
+function tog(id,i,kk){const k=kk||mk(),b=S.bills.find(x=>x.id===id),c=done(b,k),n=cnt(b),tg=(i<c)?i:i+1,m=moi(b,k);
+if(m.length){const r=m[i];if(r)setPaid(r,!r.d)}
+else{S.paid[k]=S.paid[k]||{};S.paid[k][id]=tg}persist();draw()}
+function dueTag(b){if(!b.day||!(b.freq==='Month'||b.freq==='Annual')||Y!==now.getFullYear()||M!==now.getMonth()||done(b)>=bN(b,mk()))return'';const d=b.day-now.getDate();return d<0?'<span class="tag late">overdue</span>':d<=3?'<span class="tag soon">due '+(d?'in '+d+'d':'today')+'</span>':''}
+function draw(){
+now=NOWF();{const bs=$('brandsub');if(bs)bs.textContent=PN().h+' & '+PN().j}{const fe=$('fnow');if(fe){const c=fcur(),np=fdate(c+1),dn=Math.round((new Date(now.getFullYear(),now.getMonth(),now.getDate())-fdate(c))/864e5)+1,showF=(T===3||(T===0&&FL===2))&&F!==c;fe.innerHTML='<span class="f1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/></svg>This fortnight&nbsp;<b>'+fl(c)+'</b></span><span class="mu">Day '+dn+' of 14 · next pay '+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][np.getDay()]+' '+np.getDate()+' '+MN[np.getMonth()]+'</span>'+(showF?'<span class="vw">Viewing '+fl(F)+'</span><button type="button" class="lnk" onclick="F=fcur();draw()">Back to this fortnight</button>':'')}}const bmv=!(T===1||T===2||T===3||T===4||T===5||(T===0&&FL===2));document.querySelectorAll('.bm').forEach(e=>e.style.display=bmv?'':'none');ensureThrough(fcur()+1);if(bmv)ensureThrough(Math.floor(Math.round((new Date(Y,M+1,0)-AN)/864e5)/14));rollOver();$('mon').textContent=MN[M]+' '+Y;
+[0,1,2,3,4,5].forEach(i=>$('t'+i).className=T===i?'on':'');QC=null;{const sb=$('srch'),qi=$('q'),on=T===3||T===0||T===5;sb.hidden=!on;if(on){qi.placeholder=T===3?'Search this fortnight':T===0?(FL===2?'Search this fortnight':'Search this month'):'Search all bills';if(document.activeElement!==qi)qi.value=Q[T]||'';$('qx').hidden=!(Q[T]||'').trim()}}
+const L=S.bills.filter(active);let due=0,paidv=0;
+L.forEach(b=>{const k=mk(),t=bTot(b,k);if(!t)return;due+=t;paidv+=t-bOwed(b,k)});
+$('s1').textContent=fm(due);$('s2').textContent=fm(paidv);$('s3').textContent=fm(due-paidv);$('pb').style.width=(due?paidv/due*100:0)+'%';
+
+let h='';
+if(T===0){h+=chips();
+if(FL===2){h+=fnav();const A=fpAll()[fkey(F)];if(!A)h+=startCard();else{const IT=A.items.filter(r=>r.a>0).map(vw),tt=IT.reduce((a,r)=>a+r.a,0),lf=IT.filter(r=>!r.d).reduce((a,r)=>a+r.a,0),sh=HP?IT.filter(r=>!r.d):IT;const shq=qf(sh,true);h+=summ(IT.length,tt,lf)+dupCard(F)+(sh.length&&!shq.length?noMatch():'')+(shq.length?plist(shq):'<div class="card mu">Nothing to show. All paid 🎉</div>')}}
+else{const g={},k=mk();let nb=0,tt=0,lf=0;const Lq=qf(L,false);if(L.length&&!Lq.length)h+=noMatch();Lq.forEach(b=>{const t=bTot(b,k),o2=bOwed(b,k);if(HP&&t>0&&o2<=0)return;(g[b.cat]=g[b.cat]||[]).push(b);nb++;tt+=t;lf+=o2});
+h+=summ(nb,tt,lf,1)+(nb?'':'<div class="card mu">Nothing to show. All paid 🎉</div>');
+for(const c in g){h+='<div class="grp"><div class="cat row sp"><span>'+c+'</span><span>'+fm(g[c].reduce((a,b)=>a+bOwed(b,k),0))+'</span></div><div class="card">';
+g[c].forEach(b=>{const mi=moi(b,k),n=bN(b,k),d=done(b,k),on=i=>mi.length?!!mi[i].d:i<d;let ck='';for(let i=0;i<n;i++)ck+='<button class="'+(on(i)?'d':'')+'" aria-label="'+(on(i)?'Paid':'Not paid')+'" onclick="tog(\''+b.id+'\','+i+',\''+k+'\')">'+(on(i)?'✓':'')+'</button>';
+h+='<div class="bill '+(n&&d>=n?'done':'')+(hasOv(b,k)?' od':'')+'">'+av(b.cat)+'<div class="m" onclick="edit(\''+b.id+'\')"><div class="n">'+b.name+dueTag(b)+'</div><div class="s">'+(b.freq==='Once'?'One-off · '+(b.dt?pd(b.dt).getDate()+' '+MN[pd(b.dt).getMonth()]:''):esc(fql(b))+(b.freq==='Month'&&b.day?' · day '+b.day:b.freq==='Annual'&&b.mo?' · '+dueText(b):''))+(b.acct?' · '+b.acct:'')+(n>1?' · '+(mi.length&&!mi.every(r=>r.a===mi[0].a)?mlab(mi):n+' × '+fm(mi.length?mi[0].a:b.amt)):'')+(b.end&&b.freq!=='Once'?' · '+(ended(b)?'ended ':'ends ')+endTxt(b):'')+(b.freq==='Annual'&&!b.mo?'<span class="tag soon">pick a month</span>':'')+pill(b,'btm(\''+b.id+'\')')+'</div></div><div class="amt"'+(bOwed(b,k)||!bTot(b,k)?'':' style="color:var(--mu);font-weight:500"')+'>'+(bOwed(b,k)?fm(bOwed(b,k)):(bTot(b,k)?'Paid':'–'))+'</div><div class="chk">'+ck+'</div></div>'});h+='</div></div>'}}}
+if(T===1)h=debtsView();
+if(T===2)h='<div class="card" style="padding:14px 16px"><div style="font:600 15px var(--f-head);margin-bottom:6px">Your names</div><div class="row" style="flex-wrap:wrap"><input id="nm1" aria-label="First person" value="'+esc(PN().h)+'" style="flex:1;min-width:120px"><input id="nm2" aria-label="Second person" value="'+esc(PN().j)+'" style="flex:1;min-width:120px"><button onclick="saveNames()">Save names</button></div><p class="mu" style="margin:8px 0 0">Used on the Pay tab, in bill owners and in the sidebar.</p></div><div class="card"><p class="mu">'+(MODE==='claude'?'Changes sync to every device signed in to Claude with access to this tracker.':MODE==='firebase'?'Changes sync to every device using the same sync code.':'Saved in this browser only.'+(FBC()?' Set a sync code to sync with your other devices.':''))+' Export keeps a backup file; Import brings one in.</p>'+(MODE!=='claude'&&FBC()?'<div class="row" style="margin-bottom:10px"><button onclick="setCode()">'+(CODE?'Change sync code':'Set sync code')+'</button>'+(CODE?'<button onclick="noCode(this)">Stop syncing</button>':'')+'</div>':'')+'<div class="row"><button onclick="ex()">Export</button><button onclick="$(\'imp\').click()">Import</button><button onclick="rs(this)">Reset</button></div><input type="file" id="imp" accept=".json" hidden onchange="im(this)"></div>';
+if(T===3)h=pay();if(T===4)h=chart();if(T===5)h=listView();{const qn=$('qcnt');if(qn){const on=(T===3||T===0||T===5)&&QC;qn.hidden=!on;if(on)qn.textContent='Showing '+QC.n+' of '+QC.of+' '+(T===5||(T===0&&FL!==2)?'bills':'items')+' matching “'+Q[T].trim()+'”'}}$('v').innerHTML=h}
+function edit(id){addCtx=null;cur=id||null;const b=S.bills.find(x=>x.id===id)||{cat:'',name:'',amt:'',freq:'Month',day:'',acct:'',bal:'',mo:0};
+$('dt').textContent=id?'Edit bill':'New bill';$('fn').value=b.name;fill('fc','fcn',catList(),b.cat);$('fa').value=b.amt;$('fd').value=b.day||'';fill('fp','fpn',acctList(),b.acct,'Not set');$('fdd').value=isDD(b)?'1':'0';{const op=$('fo').options;if(op&&op.length>2){op[1].text=PN().h;op[2].text=PN().j}}$('fo').value=b.o||OWN(b.cat);$('fdt').value=b.dt||ymd(new Date());ffc();$('fb').value=b.id?(debtNow(b)||''):'';$('fir').value=b.rate||'';$('fpr').value=priOf(b);
+$('fm').innerHTML='<option value="0">Month</option>'+MN.map((m,i)=>'<option value="'+(i+1)+'">'+m+'</option>').join('');$('fm').value=b.mo||0;$('fend').value=b.end||'';fillFq(b);$('del').style.display=id?'':'none';$('del').textContent='Delete';delete $('del').dataset.c;$('dlg').showModal()}
+function save(){const old=S.bills.find(x=>x.id===cur),o={id:cur||'b'+Date.now(),name:$('fn').value.trim(),cat:val('fc','fcn')||'Other',amt:+$('fa').value||0,freq:$('ff').value,day:+$('fd').value||0,acct:val('fp','fpn'),dd:$('fdd').value==='1',bal:+$('fb').value||0,mo:+$('fm').value||0,o:$('fo').value,rate:+$('fir').value||0,pri:$('fpr').value==='F'?'F':'E'};{const q=fqRead();o.freq=q.freq;if(q.ev){o.ev=q.ev;o.fqn=q.fqn}}if(o.freq!=='Once'&&$('fend').value)o.end=$('fend').value;if(old&&Math.abs(debtNow(old)-o.bal)<0.005){o.bal=old.bal;o.balAt=old.balAt||0;if(old.bal0)o.bal0=old.bal0;if(old.at0)o.at0=old.at0}else if(o.bal>0){o.balAt=Date.now();o.bal0=old&&old.bal0?old.bal0:o.bal;o.at0=old&&old.at0?old.at0:Date.now()}if(o.freq==='Once'){o.dt=$('fdt').value||ymd(new Date());o.day=+o.dt.split('-')[2];o.mo=0}
+if(!o.name)return;addList('cats',o.cat);addList('accts',o.acct);
+if(!old&&addCtx==='pay'){const dup=S.bills.find(x=>nk(x.name)===nk(o.name)&&x.o===o.o&&x.freq!=='Once');if(dup){const A=fcu(),e=A.items.find(r=>r.bid===dup.id&&!r.co);if(e){e.a=o.amt||e.a;e.d=false;delete e.x}else claimMonth(dup,pushU(A,mkItem(dup,F,o.amt||stdAmt(dup))));addCtx=null;persist();$('dlg').close();draw();return}}
+if(old&&(old.amt!==o.amt||old.day!==o.day||old.freq!==o.freq||(old.ev||0)!==(o.ev||0)||old.mo!==o.mo||old.dt!==o.dt||(old.end||'')!==(o.end||'')))stampOd(old.id);
+let swap=false;if(old&&((old.freq==='Once')!==(o.freq==='Once'))){swap=true;o.id='b'+Date.now();Object.keys(fpAll()).forEach(k=>{S.fp[k].items=S.fp[k].items.filter(r=>!(r.bid===old.id&&!r.d))})}
+const i=S.bills.findIndex(x=>x.id===cur);i>=0?S.bills[i]=o:S.bills.push(o);
+if(swap)place(o,o.freq==='Once'?null:k=>k>=fkey(fcur()));else if(old){if(old.amt!==o.amt||old.day!==o.day||old.freq!==o.freq||(old.ev||0)!==(o.ev||0)||old.mo!==o.mo||old.dt!==o.dt||(old.end||'')!==(o.end||''))resync(old,o)}else{place(o,o.freq==='Once'?null:k=>k>=fkey(fcur()));if(addCtx==='pay'&&o.freq!=='Once')forceInto(o)}addCtx=null;pruneEnd(o);persist();$('dlg').close();draw()}
+function rm(btn){if(!btn.dataset.c){btn.dataset.c=1;btn.textContent='Tap again to delete';return}const b=S.bills.find(x=>x.id===cur);if(b)Object.keys(fpAll()).forEach(k=>{S.fp[k].items=S.fp[k].items.filter(r=>!(r.bid===b.id&&!r.d))});S.bills=S.bills.filter(x=>x.id!==cur);persist();$('dlg').close();draw()}
+async function ex(){const j=JSON.stringify(S),fn='bills-backup-'+ymd(new Date())+'.json';try{if(typeof claude!=='undefined'){const d=await claude.use('downloads');if(d){await d.save({filename:fn,data:j});return}}}catch(e){if(e&&e.code)return}const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([j],{type:'application/json'}));l.download=fn;document.body.appendChild(l);l.click();l.remove()}
+function im(el){const f=el.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(d.bills){S=d;initAn();migrate();persist();draw()}}catch(e){alert('Invalid file')}})}
+function rs(b){if(!b.dataset.c){b.dataset.c=1;b.textContent='Tap again to reset';setTimeout(()=>{delete b.dataset.c;b.textContent='Reset'},4000);return}S=fresh();initAn();migrate();draw()}
+
+const FD=['29 Sep','13 Oct','27 Oct'];
+let FL=0;if(FL===1)FL=0;const KK={};
+function sfl(i){FL=i;draw()}
+function fnav(){const c=fcur();return '<div class="row sp nav2"><button onclick="sf(-1)" aria-label="Previous fortnight">‹</button><div style="text-align:center"><b>'+fl(F)+'</b><div class="mu">'+(F===c?'This fortnight':F<c?'Past fortnight':'Upcoming fortnight')+' · <button class="lnk" onclick="dstart()">Change dates</button></div></div><button onclick="sf(1)" aria-label="Next fortnight">›</button></div>'}
+function chips(){return '<div class="tabs">'+[['Month',0],['Fortnight',2]].map(x=>'<button class="'+(FL===x[1]?'on':'')+'" onclick="sfl('+x[1]+')">'+x[0]+'</button>').join('')+'</div>'}
+let HP=false;function thp(){HP=!HP;draw()}
+const summ=(n,t,l,r)=>'<div class="row sp" style="margin:0 2px 8px"><span class="mu">'+n+' bill'+(n===1?'':'s')+' · '+(r?fm(l)+' remaining (of '+fm(t)+')':fm(t)+' total · '+fm(l)+' left to pay')+'</span><button class="lnk" onclick="thp()">'+(HP?'Show paid':'Hide paid')+'</button></div>';
+function win(){const a=fdate(F);return Array.from({length:14},(_,k)=>new Date(a.getFullYear(),a.getMonth(),a.getDate()+k))}
+function win0(){const w=win(),f=d=>d.getDate()+' '+MN[d.getMonth()];return f(w[0])+' – '+f(w[13])}
+const AN0=new Date(2026,9,13);let AN=AN0;
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pd=v=>{const q=v.split('-').map(Number);return new Date(q[0],q[1]-1,q[2])};
+function initAn(){AN=(S.anchor&&/^\d{4}-\d\d-\d\d$/.test(S.anchor))?pd(S.anchor):AN0}
+initAn();
+const fdate=n=>new Date(AN.getFullYear(),AN.getMonth(),AN.getDate()+14*n);
+const fkey=n=>ymd(fdate(n));
+function dstart(){$('dv').value=ymd(fdate(F));$('dd').showModal()}
+function dok(){const v=$('dv').value;$('dd').close();if(!v)return;let delta=Math.round((pd(v)-fdate(F))/864e5);let dl=((delta%14)+14)%14;if(dl>7)dl-=14;delta=dl;if(!delta){stat('Pay day unchanged');setTimeout(()=>stat(okMsg()),3000);return}const fp=fpAll(),nf={};Object.keys(fp).forEach(k=>fp[k].items.forEach(r=>{if(r.od)return;const b=bl(r);if(r.co||(b&&(b.freq==='Once'||((b.freq==='Month'||b.freq==='Annual')&&bday(b)))))r.od=ymd(odate(r,k))}));
+Object.keys(fp).forEach(k=>{const d=pd(k);d.setDate(d.getDate()+delta);nf[ymd(d)]=fp[k]});S.fp=nf;AN=new Date(AN.getFullYear(),AN.getMonth(),AN.getDate()+delta);S.anchor=ymd(AN);if(S.roll){const rr=pd(S.roll);rr.setDate(rr.getDate()+delta);S.roll=ymd(rr)}persist();draw()}
+const fcur=()=>Math.floor(Math.round((new Date(now.getFullYear(),now.getMonth(),now.getDate())-AN)/864e5)/14);
+let F=fcur();
+const fl=n=>{const b=fdate(n+1);b.setDate(b.getDate()-1);const f=d=>d.getDate()+' '+MN[d.getMonth()];return f(fdate(n))+' – '+f(b)};
+const fnSeed=()=>[].map((r,i)=>({id:'f'+i,c:r[0],n:r[1],o:r[2],a:r[3],d:(r[4]||'000').split('').map(x=>x==='1')}));
+
+function fpAll(){if(S.fp)return S.fp;const sd=S.fn||fnSeed(),ic=S.inc||[];S.fp={};[fcur(),fcur()+1].forEach((n,i)=>{const c=ic[i]||{};S.fp[fkey(n)]={inc:{h:c.h||0,j:c.j||0},items:sd.map(r=>({id:r.id,c:r.c,n:r.n,o:r.o,a:r.a[i],d:!!r.d[i]}))}});delete S.fn;delete S.inc;return S.fp}
+const fcu=()=>fpAll()[fkey(F)];
+function sf(d){F+=d;draw()}
+function ft(id){const A0=fcu(),x=A0.items.find(r=>r.id===id);if(!x)return;if(x.part&&x.d){const rest=A0.items.find(r=>r.grp===x.grp&&r!==x&&!r.d&&r.a>0);if(rest){rest.a=Math.round((rest.a+x.a)*100)/100;A0.items.splice(A0.items.indexOf(x),1);if(!A0.items.some(r=>r.grp===rest.grp&&r.part)){delete rest.rest;delete rest.grp;delete rest.of}persist();draw();return}}setPaid(x,!x.d);if(x.d)delete x.ovd;else delete x.pp;if(x.bid&&!bl(x))x.keep=1;mergeGrp(A0);persist();draw()}
+let qcb=null,qrf=null,qmf=null,qm2=null;
+function qmv2(w){const f=qm2;$('qd').close();if(f)(w==='add'?f.add:f.rep)()}
+function ask(t,o,cb){qcb=cb;qmf=o.mv||null;$('qmv').style.display=qmf?'':'none';qpf=o.pp||null;qpa=o.ppa||0;$('qpw').style.display=qpf?'':'none';$('qpp').value='';qppv();qof=o.ov||null;{const b2=$('qov');b2.style.display=qof?'':'none';if(qof)b2.textContent=qof.on?'Remove overdue mark':'Mark as overdue';b2.className='ovb'+(qof&&qof.on?' on':'')}qm2=o.mv2||null;$('qmv2').style.display=qm2?'':'none';if(qm2)$('qmvt').textContent='Next fortnight already has it ('+fm(qm2.have)+').';qrf=o.rm||null;{const rb=$('qrm');rb.style.display=qrf?'':'none';rb.textContent='Remove';delete rb.dataset.c}$('qt').textContent=t;const nm=!!o.name;$('ql1').textContent=o.label||'Name';$('ql2').style.display=$('qa').style.display=o.noamt?'none':'';$('ql1').style.display=$('qn').style.display=nm?'':'none';$('qn').value='';$('qa').value=o.val||'';$('qd').showModal();setTimeout(()=>$(nm?'qn':'qa').focus(),60)}
+function qrem(b){if(!b.dataset.c){b.dataset.c=1;b.textContent='Tap again to remove';return}const f=qrf;$('qd').close();if(f)f()}
+let qpf=null,qpa=0;function qppv(){const e=$('qpl');if(!e)return;const v=parseFloat($('qpp').value);if(!(v>0)){e.textContent='Total owing '+fm(qpa);e.style.color='';return}if(v>=qpa-0.005){e.textContent='That pays it in full';e.style.color='var(--ok)';return}e.textContent='Paid '+fm(v)+' · '+fm(Math.round((qpa-v)*100)/100)+' left';e.style.color='var(--bad)'}
+function qpart(){const v=parseFloat($('qpp').value),f=qpf;if(!(v>0)){$('qpp').focus();return}$('qd').close();if(f)f(Math.round(v*100)/100)}
+let qof=null;function qovd(){const f=qof;$('qd').close();if(f)f.fn()}
+function qmove(){const f=qmf;$('qd').close();if(f)f()}
+function qok(){const n=$('qn').value.trim(),v=parseFloat($('qa').value),f=qcb;$('qd').close();if(f)f(n,isNaN(v)?0:v)}
+function moveNext(x,how){const f=fcu(),nx=F+1;ensureFn(nx);const to=fpAll()[fkey(nx)];if(!x.od&&!x.co)x.od=ymd(odate(x,fkey(F)));
+f.items.splice(f.items.indexOf(x),1);if(x.bid&&!x.co&&!x.mv)f.items.push({id:'t'+x.id+'@'+fkey(F),bid:x.bid,c:x.c,n:x.n,o:x.o,a:0,d:false,x:1});
+const tg=how&&to.items.find(r=>r.bid===x.bid&&r.a>0&&!r.d&&!r.co);
+if(tg){tg.a=how==='add'?Math.round((tg.a+x.a)*100)/100:x.a;delete tg.x}else{if(!x.mv&&!x.co){x.id='m'+x.id+'@'+fkey(F);x.mv=1}pushU(to,x)}
+persist();draw();const nm=vw(x).n;stat((tg?(how==='add'?'Added '+nm+' to the one in ':'Replaced '+nm+' in '):'Moved '+nm+' to ')+fl(nx));setTimeout(()=>stat(okMsg()),4000)}
+function nextHas(x){if(!x.bid)return null;if(ensureFn(F+1))persist();const to=fpAll()[fkey(F+1)];return to&&to.items.find(r=>r.bid===x.bid&&r.a>0&&!r.d&&!r.co)||null}
+function fa(id){const x=fcu().items.find(r=>r.id===id);const nh=(!x.d&&x.a>0)?nextHas(x):null;ask(vw(x).n+' – this fortnight',{val:x.a,pp:(!x.d&&x.a>0)?(v=>payPart(x,v)):null,ppa:x.a,ov:(!x.d&&x.a>0&&!x.co)?{on:!!x.ovd,fn:()=>tOv(x)}:null,mv:(!x.d&&x.a>0&&!nh)?()=>moveNext(x):null,mv2:nh?{have:nh.a,add:()=>moveNext(x,'add'),rep:()=>moveNext(x,'rep')}:null,rm:()=>{const b=bl(x);if(b&&b.freq==='Once'){S.bills=S.bills.filter(q=>q.id!==b.id);Object.values(fpAll()).forEach(f=>{f.items=f.items.filter(r=>r.bid!==b.id)})}else{x.a=0;x.d=false;x.x=1}persist();draw()}},(n,v)=>{x.a=v;if(v>0)delete x.x;else{x.d=false;x.x=1}persist();draw()})}
+function fi(w){const I=fcu().inc;ask((w==='h'?PN().h:PN().j)+' pay this fortnight',{val:I[w]||''},(n,v)=>{I[w]=v;persist();draw()})}
+const nk=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const OWN=c=>/^Jordyn/.test(c)?'Jordyn':/^Hayden/.test(c)?'Hayden':'Joint';
+const bl=r=>S.bills.find(b=>b.id===r.bid);
+const vw=r=>{const b=bl(r);return b?Object.assign({},r,{n:b.name,c:b.cat,o:b.o||r.o,dd:b.dd}):r};
+const dim=d=>new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+const bday=b=>b.freq==='Annual'?(b.mo?(b.day||1):0):b.day;
+const hits=(b,d)=>{const dy=bday(b);return !!dy&&d.getDate()===Math.min(dy,dim(d))&&inMo(b,d.getMonth()+1)};
+const endD=b=>b&&b.end&&b.freq!=='Once'?pd(b.end):null;
+const ended=b=>{const e=endD(b);return !!e&&e<new Date(now.getFullYear(),now.getMonth(),now.getDate())};
+const endTxt=b=>{const e=endD(b);return e?e.getDate()+' '+MN[e.getMonth()]+' '+e.getFullYear():''};
+const perPayB=b=>b.freq==='Weekly'||b.freq==='Fortnight'||(b.freq==='Month'&&!b.day);
+function pruneEnd(b){const e=endD(b);if(!e)return 0;let ch=0;const fp=fpAll();Object.keys(fp).forEach(k=>{const f=fp[k],n0=f.items.length;f.items=f.items.filter(r=>!(r.bid===b.id&&!r.d&&!r.co&&!r.mv&&!r.ovd&&!r.part&&!r.rest&&odate(r,k)>e));ch+=n0-f.items.length});return ch}
+function isFinal(r,k){const b=bl(r),e=endD(b);if(!e||r.co||!(r.a>0))return false;const d=odate(r,k);if(d>e)return false;let nx;if(perPayB(b)){const a=pd(k);nx=new Date(a.getFullYear(),a.getMonth(),a.getDate()+14)}else{const st=b.freq==='Annual'?(b.ev||12):1;nx=new Date(d.getFullYear(),d.getMonth()+st,1);nx=new Date(nx.getFullYear(),nx.getMonth(),Math.min(bday(b)||1,dim(nx)))}return nx>e}
+function dueDate(b,n){const d=dueDate0(b,n),e=endD(b);return d&&e&&d>e?null:d}
+function dueDate0(b,n){if(!b.amt||b.freq==='Weekly'||b.freq==='Fortnight')return null;const a=fdate(n);if(b.freq==='Once'){if(!b.dt)return null;const d=pd(b.dt),z=new Date(a.getFullYear(),a.getMonth(),a.getDate()+14);return d>=a&&d<z?d:null}if(!bday(b))return null;
+for(let k=0;k<14;k++){const d=new Date(a.getFullYear(),a.getMonth(),a.getDate()+k);if(hits(b,d))return d}return null}
+const halfOld=b=>Math.round(b.amt/2*100)/100;
+function stdAmt(b){return b.freq==='Weekly'?b.amt*2:(b.freq==='Month'&&!b.day?Math.round(b.amt*12/26*100)/100:b.amt)}
+function dueAmt(b,n){if(!b.amt)return 0;{const e=endD(b);if(e){const a=fdate(n);if(a>e)return 0;if(b.freq==='Weekly'&&new Date(a.getFullYear(),a.getMonth(),a.getDate()+7)>e)return b.amt}}if(b.freq==='Weekly'||b.freq==='Fortnight')return stdAmt(b);if(b.freq==='Month'&&!b.day)return stdAmt(b);return dueDate(b,n)?b.amt:0}
+function pushU(f,r){if(f.items.some(q=>q.id===r.id)){let i=2;while(f.items.some(q=>q.id===r.id+'~'+i))i++;r.id+='~'+i}f.items.push(r);return r}
+const mkItem=(b,n,a,od)=>{const r={id:'i'+b.id+'_'+fkey(n),bid:b.id,c:b.cat,n:b.name,o:b.o,a:a,d:false};if(od)r.od=od;return r};
+const dated=b=>!!b&&(b.freq==='Once'||((b.freq==='Month'||b.freq==='Annual')&&!!bday(b)));
+function stampOd(bid){const fp=fpAll();Object.keys(fp).forEach(k=>fp[k].items.forEach(r=>{if(r.od||(bid&&r.bid!==bid))return;const b=bl(r);if(r.co||dated(b))r.od=ymd(odate(r,k))}))}
+const ymk=d=>d.getFullYear()+'-'+d.getMonth();
+function place(b,ok){const fp=fpAll();Object.keys(fp).sort().forEach(k=>{if(ok&&!ok(k))return;const n=Math.round((pd(k)-AN)/864e5/14),f=fp[k];if(f.items.some(r=>r.bid===b.id&&(r.a>0||r.x)&&!r.co&&!r.mv))return;const dd=dueDate(b,n);
+if(dd){const mk2=ymk(dd);if(Object.keys(fp).some(q=>fp[q].items.some(r=>r.bid===b.id&&(r.a>0||r.x)&&ymk(odate(r,q))===mk2)))return}const a=dueAmt(b,n);if(a>0){f.items=f.items.filter(r=>!(r.bid===b.id&&!r.a&&!r.x));pushU(f,mkItem(b,n,a,dd?ymd(dd):null))}})}
+function resync(old,o){const ck=fkey(fcur()),once=old.freq==='Once'||(o&&o.freq==='Once');
+if(once){let paid=[];Object.keys(fpAll()).forEach(k=>{S.fp[k].items=S.fp[k].items.filter(r=>{if(r.bid!==old.id)return true;if(r.d&&r.a>0){paid.push(r);return true}return false})});
+if(o&&o.freq==='Once'&&paid.length){paid.forEach(r=>{r.a=o.amt;r.od=o.dt});return}if(o)place(o,null);return}
+Object.keys(fpAll()).forEach(k=>{if(k<ck)return;S.fp[k].items=S.fp[k].items.filter(r=>!(r.bid===old.id&&!r.d&&!r.co&&!r.mv&&(r.a===stdAmt(old)||r.a===halfOld(old)||(!r.a&&!r.x))))});if(o)place(o,k=>k>=ck)}
+function odate(r,k){if(r.od)return pd(r.od);const b=bl(r),a=pd(r.co||k);if(b&&b.freq==='Once'&&b.dt)return pd(b.dt);if(b&&bday(b)&&b.freq!=='Weekly'&&b.freq!=='Fortnight'){for(let i=0;i<14;i++){const d=new Date(a.getFullYear(),a.getMonth(),a.getDate()+i);if(hits(b,d))return d}}return a}
+function moi(b,k){const out=[],fp=fpAll();Object.keys(fp).sort().forEach(fk=>fp[fk].items.forEach(r=>{if(r.bid===b.id&&r.a>0){const d=odate(r,fk);if(d.getFullYear()+'-'+d.getMonth()===k)out.push(r)}}));return out}
+const bN=(b,k)=>moi(b,k).length||cnt(b);
+const bTot=(b,k)=>{const m=moi(b,k);if(m.length)return Math.round(m.reduce((a,r)=>a+r.a,0)*100)/100;return (b.freq==='Annual'&&!b.mo)?0:b.amt*cnt(b)};
+const bOwed=(b,k)=>{const m=moi(b,k);if(m.length)return Math.round(m.reduce((a,r)=>a+(r.d?0:r.a),0)*100)/100;return Math.max(0,Math.round((bTot(b,k)-b.amt*done(b,k))*100)/100)};
+function migrate(){if(fixShift())persist();if(repair())persist();if(S.v===10)return;
+if(!(S.v>=3)){
+S.bills.forEach(b=>{if(!b.o)b.o=OWN(b.cat)});
+seed.forEach(sb=>{const m=S.bills.find(b=>nk(b.name)===nk(sb.name)&&b.o===sb.o);if(m){m.amt=sb.amt;m.freq=sb.freq;m.day=sb.day;m.mo=sb.mo;m.bal=m.bal||sb.bal;if(m.dd===undefined)m.dd=sb.dd}else S.bills.push(Object.assign({},sb,{id:'m_'+nk(sb.name)+sb.o}))});
+const fp=fpAll();Object.keys(fp).forEach(k=>fp[k].items.forEach(r=>{if(r.bid)return;let b=S.bills.find(x=>nk(x.name)===nk(r.n)&&x.o===r.o);if(!b){b={id:'m_'+nk(r.n)+r.o,cat:r.c,name:r.n,o:r.o,amt:r.a,freq:'Month',day:0,acct:'',bal:0,mo:0};S.bills.push(b)}r.bid=b.id}))}
+if(!(S.v>=4)){Object.values(fpAll()).forEach(f=>{f.items=f.items.filter(r=>r.a>0||r.x)});S.bills.forEach(b=>place(b))}
+S.paid=S.paid||{};
+S.bills.forEach(b=>{if(!cnt(b))return;const c={};Object.keys(S.fp).forEach(key=>S.fp[key].items.forEach(r=>{if(r.bid===b.id&&r.d&&r.a>0){const k=ymk(odate(r,key));c[k]=(c[k]||0)+1}}));for(const k in c){S.paid[k]=S.paid[k]||{};S.paid[k][b.id]=Math.max(S.paid[k][b.id]||0,Math.min(c[k],cnt(b)))}});
+if(!(S.v>=6)){S.bills.forEach(b=>place(b,k=>k>=fkey(fcur())))}
+if(!(S.v>=7)){S.roll=S.roll||fkey(fcur())}
+if(!(S.v>=8)){const ck=fkey(fcur());Object.keys(S.fp).forEach(k=>{S.fp[k].items.forEach(r=>{const b=bl(r);
+if(r.mv&&!r.od){const org=(r.id.split('@')[1]||'').slice(0,10);if(/^\d{4}-\d\d-\d\d$/.test(org))r.od=ymd(odate(Object.assign({},r,{od:null}),org))}
+if(k>=ck&&b&&b.freq==='Month'&&!b.day&&!r.d&&!r.co&&!r.mv&&r.a===halfOld(b))r.a=stdAmt(b)})})}
+if(!(S.v>=9))stampOd(null);
+if(!(S.v>=10)){S.bills.forEach(b=>{if(!b.pri)b.pri=priOf(b);if(b.bal>0&&!b.bal0){b.bal0=b.bal;b.balAt=Date.now();b.at0=Date.now()}})}
+S.v=10;persist()}
+function rollOver(){if(!S.roll)return;const fp=fpAll(),c=fcur();let n=Math.round((pd(S.roll)-AN)/864e5/14),ch=false;
+for(;n<c;n++){const k=fkey(n),f=fp[k];if(!f)continue;const un=f.items.filter(r=>r.a>0&&!r.d);if(!un.length)continue;ensureFn(n+1);const nx=fp[fkey(n+1)];
+un.forEach(r=>{f.items.splice(f.items.indexOf(r),1);if(!r.co){r.od=r.od||ymd(odate(r,k));r.id='o'+r.id+'@'+k;r.co=k}pushU(nx,r)});ch=true}
+if(ch)persist()}
+function ensureThrough(n){const ks=Object.keys(fpAll()).sort();if(!ks.length)return;n=Math.min(n,fcur()+27);let i=Math.round((pd(ks[ks.length-1])-AN)/864e5/14)+1,ch=false;for(;i<=n;i++)if(ensureFn(i))ch=true;if(ch)persist()}
+function claimMonth(o,it){if(!dated(o)||o.freq==='Once')return;const mo=ymk(odate(it,fkey(F)));Object.keys(fpAll()).forEach(k=>{if(k===fkey(F))return;S.fp[k].items.forEach(r=>{if(r.bid===o.id&&r.a>0&&!r.d&&!r.co&&!r.mv&&ymk(odate(r,k))===mo){r.a=0;r.x=1}})})}
+function forceInto(o){const A=fcu();if(!A||A.items.some(r=>r.bid===o.id&&r.a>0&&!r.co))return;claimMonth(o,pushU(A,mkItem(o,F,stdAmt(o)||o.amt)))}
+function dups(F2){const A=fpAll()[fkey(F2)];if(!A)return[];const out=[],g={};
+A.items.forEach(r=>{if(r.a>0&&r.bid&&!r.co&&!r.ok&&!r.part){const v=vw(r),key=nk(v.n)+'|'+(v.o||'');(g[key]=g[key]||[]).push(r)}});
+for(const gk in g){const L3=g[gk];if(L3.length>1&&L3.some(r=>!r.d))out.push({t:'same',b:L3[0].bid,items:L3})}
+A.items.forEach(r=>{const b=bl(r);if(!b||!(r.a>0)||r.d||r.co||r.ok||r.part||r.rest||!(b.freq==='Month'||b.freq==='Annual')||!bday(b))return;const mo=ymk(odate(r,fkey(F2)));
+const oth=[];Object.keys(fpAll()).forEach(k=>{if(k===fkey(F2))return;S.fp[k].items.forEach(q=>{if(q.bid===r.bid&&q.a>0&&!q.co&&!q.ok&&!q.part&&ymk(odate(q,k))===mo)oth.push(q)})});
+if(oth.length)out.push({t:'month',b:r.bid,items:[r],oth:oth})});return out}
+function dupCard(F2){const D=dups(F2);if(!D.length)return'';let h='<div class="grp wide"><div class="cat row sp" style="color:var(--warn)"><span>Possible double-ups</span><span></span></div><div class="card" style="border-color:var(--warn);border-width:2px;padding:10px 14px">';
+D.forEach((d,i)=>{const b=S.bills.find(x=>x.id===d.b),nm=b?b.name:'This bill';
+if(d.t==='same')h+='<div style="padding:6px 0"><b style="font-size:15px">'+esc(nm)+'</b> is in this fortnight '+d.items.length+' times ('+d.items.map(r=>fm(r.a)).join(' + ')+').<div class="row" style="margin-top:6px;flex-wrap:wrap"><button onclick="dupFix('+F2+','+i+',\'join\')">Combine into one</button><button onclick="dupFix('+F2+','+i+',\'keep1\')">Keep the first only</button><button class="lnk" onclick="dupFix('+F2+','+i+',\'ok\')">Both are right</button></div></div>';
+else h+='<div style="padding:6px 0"><b style="font-size:15px">'+esc(nm)+'</b> '+fm(d.items[0].a)+' is due in '+MN[odate(d.items[0],fkey(F2)).getMonth()]+', but that month already has '+d.oth.map(q=>fm(q.a)+(q.d?' (paid)':'')).join(' + ')+' in another fortnight.<div class="row" style="margin-top:6px;flex-wrap:wrap"><button onclick="dupFix('+F2+','+i+',\'drop\')">Remove '+fm(d.items[0].a)+'</button><button class="lnk" onclick="dupFix('+F2+','+i+',\'ok\')">It is an extra payment</button></div></div>'});
+return h+'</div></div>'}
+function dupFix(F2,i,how){const d=dups(F2)[i];if(!d)return;const A=fpAll()[fkey(F2)];
+if(how==='ok'){d.items.concat(d.oth||[]).forEach(r=>{r.ok=1})}
+else if(how==='drop'){const r=d.items[0];if(r.mv||r.co)A.items.splice(A.items.indexOf(r),1);else{r.a=0;r.x=1;r.d=false}}
+else{const keep=d.items.find(r=>!r.mv)||d.items[0],rest=d.items.filter(r=>r!==keep);if(how==='join')keep.a=Math.round(d.items.reduce((a,r)=>a+r.a,0)*100)/100;keep.d=d.items.every(r=>r.d);rest.forEach(r=>{A.items.splice(A.items.indexOf(r),1);const b=bl(r);if(b&&b.freq==='Once'&&b.id!==keep.bid&&!Object.values(fpAll()).some(f=>f.items.some(q=>q.bid===b.id&&q.a>0)))S.bills=S.bills.filter(x=>x.id!==b.id)})}
+persist();draw()}
+function fixShift(){const fp=fpAll(),ks=Object.keys(fp).sort();let moved={},n0=0;
+ const orig=k=>{const c={};fp[k].items.forEach(r=>{const m=/_(\d{4}-\d\d-\d\d)(?:~\d+)?$/.exec(r.id||'');if(m){const o=Math.round((pd(k)-pd(m[1]))/864e5);c[o]=(c[o]||0)+1}});let best=0,bn=0;for(const o in c)if(c[o]>bn){bn=c[o];best=+o}return bn>=2?best:0};
+ ks.forEach(k=>{const off=orig(k);if(Math.abs(off)<10)return;const od=new Date(pd(k).getTime()-off*864e5),n=Math.floor(Math.round((new Date(od.getFullYear(),od.getMonth(),od.getDate())-AN)/864e5)/14);moved[k]=fkey(n)});
+ if(!Object.keys(moved).length)return 0;
+ const src={};for(const k in moved){src[k]=fp[k];delete fp[k]}
+ for(const k in moved){const t=moved[k],old=src[k];
+  if(!fp[t]){fp[t]=old;n0++;continue}
+  const cur=fp[t],have=new Set(old.items.filter(r=>!r.co&&!r.mv).map(r=>r.bid));
+  cur.items.forEach(r=>{if(r.co||r.mv||!r.bid||!have.has(r.bid)){if(!old.items.some(q=>q.id===r.id))old.items.push(r);else{r.id+='~n';old.items.push(r)}}});
+  if(!(old.inc.h+old.inc.j)&&(cur.inc.h+cur.inc.j))old.inc=cur.inc;
+  fp[t]=old;n0++}
+ if(S.roll&&moved[S.roll])S.roll=moved[S.roll];
+ if(S.roll&&S.roll>fkey(fcur()))S.roll=fkey(fcur());
+ S.bills.forEach(b=>place(b,k=>k>=fkey(fcur())));
+ S.fixed=(S.fixed||0)+n0;return n0}
+function repair(){let ch=0;const ids=new Set(S.bills.map(b=>b.id)),fp=fpAll();
+S.bills.forEach(b=>{ch+=pruneEnd(b)});Object.keys(fp).forEach(k=>{const f=fp[k],seen=new Set(),reg={};ch+=mergeGrp(f);
+f.items=f.items.filter(r=>{if(r.bid&&!ids.has(r.bid)&&!r.d&&!r.keep){ch++;return false}return true});
+f.items.forEach((r,j)=>{if(seen.has(r.id)){r.id+='~'+j;ch++}seen.add(r.id)});
+f.items=f.items.filter(r=>{if(!r.bid||r.co||r.mv||r.ok||r.part||r.rest||!(r.a>0)||r.d)return true;const key=r.bid+'|'+r.a;if(reg[key]){ch++;return false}reg[key]=1;return true})});
+return ch}
+function ensureFn(n){const fp=fpAll(),k=fkey(n);if(fp[k])return false;let s0=null;Object.keys(fp).sort().forEach(x=>{if(x<k)s0=x});const src=s0&&fp[s0];fp[k]={inc:{h:src?src.inc.h:0,j:src?src.inc.j:0},items:[]};fp[k].items=[];S.bills.forEach(b=>place(b,q=>q===k));return true}
+function ensureMonth(y,mm){const ks=Object.keys(fpAll()).sort();if(!ks.length)return;const lo=Math.round((pd(ks[0])-AN)/864e5/14),n0=Math.floor(Math.round((new Date(y,mm,1)-AN)/864e5)/14),n1=Math.floor(Math.round((new Date(y,mm+1,0)-AN)/864e5)/14);let ch=false;for(let n=Math.max(n0,lo);n<=n1;n++)if(ensureFn(n))ch=true;if(ch)persist()}
+let addCtx=null;
+function fadd(){if(!fcu())return;edit();addCtx='pay';$('dt').textContent='Add an item';$('ff').value='Once';const a=fdate(F),z=new Date(a.getFullYear(),a.getMonth(),a.getDate()+14),t=new Date(now.getFullYear(),now.getMonth(),now.getDate());$('fdt').value=ymd(t>=a&&t<z?t:a);ffc()}
+let CV='f';function sc(v){CV=v==='c'?'f':v;draw()}
+// calendar: every bill on the day it is due; bills with no set day sit on pay days
+let CY=null,CMo=null,CSel=null;
+function calMv(d){if(CY===null){CY=now.getFullYear();CMo=now.getMonth()}CMo+=d;if(CMo<0){CMo=11;CY--}if(CMo>11){CMo=0;CY++}CSel=null;draw()}
+function calPick(k){CSel=k;draw()}
+function calData(y,m,BL){BL=BL||S.bills;const out={},add=(k,e)=>(out[k]=out[k]||[]).push(e),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()),fp=fpAll(),mk2=y+'-'+m;
+ const last=new Date(y,m+1,0).getDate();
+ // pay days in this month
+ const pays=[];for(let n=Math.floor(Math.round((new Date(y,m,1)-AN)/864e5)/14)-1;;n++){const d=fdate(n);if(d>new Date(y,m,last))break;if(d.getFullYear()===y&&d.getMonth()===m)pays.push(n)}
+ pays.forEach(n=>{const k=fkey(n);out[k]=out[k]||[];out[k].pay=n});
+ BL.forEach(b=>{if(!(b.amt>0))return;const eD=endD(b);
+  const perPay=b.freq==='Weekly'||b.freq==='Fortnight'||(b.freq==='Month'&&!b.day);
+  if(perPay){pays.forEach(n=>{const k=fkey(n),f=fp[k],its=f?f.items.filter(r=>r.bid===b.id&&!r.co&&r.a>0):[];if(eD&&fdate(n)>eD&&!its.length)return;if(f&&!its.length&&f.items.some(r=>r.bid===b.id&&r.x))return;add(k,{b,a:its.length?its.reduce((a,r)=>a+r.a,0):stdAmt(b),paid:its.length?its.every(r=>r.d):false,pay:1,od:its.some(isOv)})});return}
+  let d=null;if(b.freq==='Once'){if(b.dt){const x=pd(b.dt);if(x.getFullYear()===y&&x.getMonth()===m)d=x}}
+  else if(b.freq==='Month'&&b.day)d=new Date(y,m,Math.min(b.day,last));
+  else if(b.freq==='Annual'&&b.mo&&inMo(b,m+1))d=new Date(y,m,Math.min(b.day||1,last));
+  if(d&&eD&&d>eD&&b.freq!=='Once'&&!moi(b,mk2).some(r=>r.a>0))return;
+  if(!d)return;if(Object.keys(fp).some(q=>fp[q].items.some(r=>r.bid===b.id&&r.x&&!(r.a>0)&&ymk(odate(r,q))===mk2)))return;const m2=moi(b,mk2),it=m2.find(r=>r.a>0)||null,k=ymd(d);
+  if(m2.length&&!m2.some(r=>r.a>0))return;
+  const paid=m2.length?m2.every(r=>r.d):false;add(k,{b,a:it?m2.reduce((a,r)=>a+r.a,0):b.amt,paid,od:!paid&&(d<t0||m2.some(isOv))})});
+ return out}
+function calView(BL){if(CY===null){CY=now.getFullYear();CMo=now.getMonth()}const y=CY,m=CMo,D=calData(y,m,BL),last=new Date(y,m+1,0).getDate(),first=(new Date(y,m,1).getDay()+6)%7,tk=ymd(now);
+ let dueT=0,payT=0,np=0,left=0;for(const k in D){D[k].forEach(e=>{if(e.pay)payT+=e.a;else dueT+=e.a;if(!e.paid)left+=e.a});if(D[k].pay!==undefined)np++}
+ if(!CSel||CSel.slice(0,7)!==ymd(new Date(y,m,1)).slice(0,7))CSel=(now.getFullYear()===y&&now.getMonth()===m)?tk:(Object.keys(D).sort()[0]||ymd(new Date(y,m,1)));
+ let h='<div class="row sp nav2"><button onclick="calMv(-1)" aria-label="Previous month">‹</button><b>'+['January','February','March','April','May','June','July','August','September','October','November','December'][m]+' '+y+'</b><button onclick="calMv(1)" aria-label="Next month">›</button></div>';
+ h+='<div class="stats plain"><div class="stat"><small>On set dates</small><b>'+fm(dueT)+'</b></div><div class="stat"><small>Each pay ('+np+' pay day'+(np===1?'':'s')+')</small><b>'+fm(payT)+'</b></div><div class="stat"><small>Still to pay</small><b>'+fm(left)+'</b></div></div>';
+ h+='<div class="card cal"><div class="cg">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<div class="dh">'+x+'</div>').join('');
+ for(let i=0;i<first;i++)h+='<div class="dc empty"></div>';
+ for(let d=1;d<=last;d++){const k=ymd(new Date(y,m,d)),E=D[k]||[],dated=E.filter(e=>!e.pay),isPay=E.pay!==undefined,un=E.filter(e=>!e.paid).reduce((a,e)=>a+e.a,0),od=dated.some(e=>e.od),allP=E.length&&E.every(e=>e.paid);
+  const names=dated.slice(0,3).map(e=>'<span class="cn'+(e.paid?' pd':e.od?' ov':'')+'">'+esc(e.b.name)+'</span>').join('')+(dated.length>3?'<span class="cn more">+'+(dated.length-3)+' more</span>':'');
+  h+='<button type="button" class="dc'+(k===tk?' today':'')+(k===CSel?' sel':'')+(od?' hasov':'')+'" onclick="calPick(\''+k+'\')" aria-label="'+d+' '+MN[m]+(E.length?', '+E.length+' bills':'')+(isPay?', pay day':'')+'"><span class="dn">'+d+'</span>'+(isPay?'<span class="pay">Pay</span>':'')
+   +(E.length?'<span class="dots">'+dated.slice(0,4).map(e=>'<i class="'+(e.paid?'p':e.od?'o':'')+'"></i>').join('')+'</span><span class="ct'+(allP?' pd':'')+'">'+(allP?'Paid':'$'+Math.round(un).toLocaleString('en-AU'))+'</span>':'')+'<span class="cns">'+names+'</span></button>'}
+ h+='</div><div class="leg"><span><i style="background:var(--ac)"></i>Due</span><span><i style="background:var(--ok)"></i>Paid</span><span><i style="background:var(--bad)"></i>Overdue</span><span><i style="background:var(--acs);border:1px solid var(--ac)"></i>Pay day</span></div></div>';
+ const E=D[CSel]||[],sd=pd(CSel);
+ h+='<div class="cat row sp"><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][sd.getDay()]+' '+sd.getDate()+' '+MN[sd.getMonth()]+(E.pay!==undefined?' · pay day':'')+'</span><span>'+(E.length?fm(E.reduce((a,e)=>a+e.a,0)):'')+'</span></div>';
+ if(!E.length)h+='<div class="card" style="padding:12px 16px" >Nothing due on this day.</div>';
+ else{const row=e=>'<div class="bill'+(e.paid?' done':'')+(e.od?' od':'')+'" onclick="edit(\''+e.b.id+'\')">'+av(e.b.cat)+'<div class="m"><div class="n">'+esc(e.b.name)+(e.od?'<span class="tag late">overdue</span>':'')+'</div><div class="s">'+esc(who(e.b.o))+' · '+(e.pay?'every pay':fql(e.b))+' · '+(isDD(e.b)?'Direct debit':'Manual')+'</div></div><div class="amt">'+(e.paid?'Paid':fm(e.a))+'</div></div>';
+  const dt=E.filter(e=>!e.pay),pp=E.filter(e=>e.pay);
+  if(dt.length)h+='<div class="card">'+dt.map(row).join('')+'</div>';
+  if(pp.length)h+='<div class="mu" style="margin:10px 2px 6px">Paid from this pay ('+fl(E.pay)+'), no set day</div><div class="card">'+pp.map(row).join('')+'</div>'}
+ return h+'<p class="mu">Bills with a due day sit on that day. Weekly, fortnightly and no-set-day bills are shown on each pay day. Tick bills off on the Pay or Bills tab; tap a bill here to change it.</p>'}
+function chart(){const fp=fpAll();let rows=Object.keys(fp).sort().map(k=>{const f=fp[k],it=f.items.map(vw).filter(r=>r.a>0),sv=it.filter(r=>/^savings/i.test(r.c)).reduce((a,r)=>a+r.a,0);return{k:k,e:f.inc.h+f.inc.j,b:it.reduce((a,r)=>a+r.a,0)-sv,s:sv}});
+let tg='<div class="tabs">'+[['f','By fortnight'],['m','By month']].map(x=>'<button class="'+(CV===x[0]?'on':'')+'" onclick="sc(\''+x[0]+'\')">'+x[1]+'</button>').join('')+'</div>';
+if(CV==='m'){const g={},o=[];rows.forEach(r=>{const d=pd(r.k),m=d.getFullYear()+'-'+d.getMonth();if(!g[m]){g[m]={k:r.k,e:0,b:0,s:0,lab:MN[d.getMonth()]+' '+String(d.getFullYear()).slice(2)};o.push(g[m])}g[m].e+=r.e;g[m].b+=r.b;g[m].s+=r.s});rows=o}
+rows=rows.slice(-8).map(r=>Object.assign({lab:pd(r.k).getDate()+' '+MN[pd(r.k).getMonth()]},r));
+if(!rows.length)return tg+'<div class="card mu" style="padding:14px">Nothing to chart yet. Start a fortnight on the Pay tab.</div>';
+const te=rows.reduce((a,r)=>a+r.e,0),tb=rows.reduce((a,r)=>a+r.b,0),ts=rows.reduce((a,r)=>a+r.s,0),left=te-tb-ts;
+const sn=v=>(v<0?'-':'')+fm(Math.abs(v));
+let h=tg+'<div class="s3"><div class="stat"><small>Total earnings</small><b>'+fm(te)+'</b></div><div class="stat"><small>Total bills</small><b>'+fm(tb)+'</b></div><div class="stat"><small>Total savings</small><b>'+fm(ts)+'</b></div></div>';
+h+='<div class="mu" style="margin:0 2px 8px">Left after bills and savings: <b style="color:'+(left<0?'var(--bad)':'var(--ok)')+'">'+sn(left)+'</b> · '+(CV==='m'?'last '+rows.length+' months':'last '+rows.length+' fortnights')+'</div>';
+const W=640,H=250,L=46,RM=8,T0=12,B=32,pw=W-L-RM,ph=H-T0-B,mx=Math.max(1,...rows.flatMap(r=>[r.e,r.b,r.s])),st=Math.pow(10,Math.floor(Math.log10(mx))),top=Math.ceil(mx/st)*st,gw=pw/rows.length,bw=Math.min(20,(gw-10)/3);
+const yk=v=>v>=1000?'$'+(v/1000).toFixed(v%1000?1:0)+'k':'$'+v;
+let sv='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="Earnings, bills and savings for each period">';
+for(let i=0;i<=4;i++){const y=T0+ph-ph*i/4;sv+='<line x1="'+L+'" x2="'+(W-RM)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--bd)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" style="fill:var(--mu)">'+yk(top*i/4)+'</text>'}
+const cols=['var(--e1)','var(--e2)','var(--e3)'],names=['Earnings','Bills','Savings'];
+rows.forEach((r,gi)=>{[r.e,r.b,r.s].forEach((v,j)=>{const hh=v/top*ph,x=L+gi*gw+gw/2+(j-1)*(bw+3)-bw/2;sv+='<rect x="'+x.toFixed(1)+'" y="'+(T0+ph-hh).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(hh,v>0?1:0).toFixed(1)+'" rx="3" style="fill:'+cols[j]+'"><title>'+names[j]+' '+fm(v)+'</title></rect>'});sv+='<text x="'+(L+gi*gw+gw/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" style="fill:var(--mu)">'+r.lab+'</text>'});
+sv+='</svg>';
+h+='<div class="card" style="padding:12px 10px 8px">'+sv+'<div class="leg">'+names.map((n,j)=>'<span><i style="background:'+cols[j]+'"></i>'+n+'</span>').join('')+'</div></div>';
+h+='<div class="card tbl" style="padding:6px 6px"><table><tr><th>'+(CV==='m'?'Month':'From')+'</th><th>Earned</th><th>Bills</th><th>Savings</th><th>Left</th></tr>'+rows.map(r=>{const l=r.e-r.b-r.s;return '<tr><td>'+r.lab+'</td><td>'+fm(r.e)+'</td><td>'+fm(r.b)+'</td><td>'+fm(r.s)+'</td><td style="color:'+(l<0?'var(--bad)':'var(--ok)')+'">'+sn(l)+'</td></tr>'}).join('')+'</table></div>';
+return h+'<p class="mu">Bills include everything planned in each fortnight except savings. Only fortnights you have set up are included.</p>'}
+function fstart(){ensureFn(F);persist();draw()}
+function startCard(){return '<div class="card" style="padding:16px"><b class="amt" style="font-size:18px">Start this fortnight</b><p class="mu">Adds the bills from your Bills list that fall due in this fortnight, all unpaid. Bills with no due day are spread across the fortnights of the month. Then set your pay and add anything extra.</p><button class="p" onclick="fstart()">Start '+fl(F)+'</button></div>'}
+function plist(IT){let L2=IT.filter(r=>r.a>0);{const P=L2.filter(r=>r.part&&r.grp),o=L2.filter(r=>!P.includes(r));P.forEach(p=>{const i=o.findIndex(r=>r.rest&&r.grp===p.grp);if(i<0)o.push(p);else{let j=i+1;while(j<o.length&&o[j].grp===p.grp)j++;o.splice(j,0,p)}});L2=o}const ovG=new Set(L2.filter(r=>r.rest&&isOv(r)).map(r=>r.grp)),isO=r=>isOv(r)||(r.part&&ovG.has(r.grp));
+const row=r=>{const d=r.d,o=isO(r);return '<div class="bill '+(d?'done ':'')+(o?'od':'')+'">'+av(r.c)+'<div class="m"'+(r.bid&&bl(r)?' onclick="edit(\''+r.bid+'\')"':'')+'><div class="n">'+r.n+(bl(r)&&bl(r).freq==='Once'?'<span class="tag">one-off</span>':'')+(isFinal(r,fkey(F))?'<span class="tag soon">last payment</span>':'')+(o&&!r.part?'<span class="tag late">'+(r.co?'overdue · from '+pd(r.co).getDate()+' '+MN[pd(r.co).getMonth()]:'overdue')+'</span>':'')+(r.rest?'<span class="tag">rest of '+fm(r.of||r.a)+'</span>':'')+(r.pp&&r.d?'<span class="tag">paid in '+r.pp+' parts</span>':'')+(r.part?'<span class="tag">part payment</span>':'')+'</div><div class="s">'+esc(who(r.o))+(isFlex(r)?' · Flexible':'')+pill(r,'ftm(\''+r.id+'\')')+'</div>'+(r.bid&&bl(r)?'<span class="hint"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true" style="vertical-align:-1px;margin-right:3px"><path d="M4 20h4L19 9l-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Edit bill</span>':'')+'</div><div class="amt tp" onclick="fa(\''+r.id+'\')">'+fm(r.a)+'<br><span class="hint"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true" style="vertical-align:-1px;margin-right:3px"><path d="M4 20h4L19 9l-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>This fortnight</span></div><div class="chk"><button class="'+(d?'d':'')+'" onclick="ft(\''+r.id+'\')">'+(d?'✓':'')+'</button></div></div>'};
+let h='';const od=L2.filter(isO);
+if(od.length)h+='<div class="grp wide"><div class="cat row sp" style="color:var(--bad)"><span>Overdue – pay first</span><span>'+fm(od.reduce((a,r)=>a+(r.d?0:r.a),0))+'</span></div><div class="card od">'+od.map(row).join('')+'</div></div>';
+const g={};L2.filter(r=>!isO(r)).forEach(r=>(g[r.c]=g[r.c]||[]).push(r));
+for(const k in g){h+='<div class="grp"><div class="cat row sp"><span>'+k+'</span><span>'+fm(g[k].reduce((a,r)=>a+(r.d?0:r.a),0))+'</span></div><div class="card">'+g[k].map(row).join('')+'</div></div>'}
+return h}
+function welcome(){if(S.bills.length)return'';return '<div class="card" style="padding:16px;border-color:var(--ac)"><div style="font:700 18px var(--f-head);margin-bottom:6px">Welcome – set up in three steps</div><ol style="margin:0;padding-left:20px;line-height:1.7"><li>On the <b>Data</b> tab, enter your two names.</li><li>Here, tap <b>Change dates</b> and pick your pay day, so each fortnight matches your pay.</li><li>Tap <b>+</b> to add each bill: name, amount, how often and due day. Mark debts with their balance, and set bills that can wait as Flexible.</li></ol><p class="mu" style="margin:8px 0 0">Then enter each fortnight\'s pay and tick bills off as you pay them.</p></div>'}
+function pay(){const A=fpAll()[fkey(F)];let h=fnav()+welcome();if(!A)return h+startCard();
+const I=A.inc,pp=I.h+I.j,IT=A.items.map(vw);let tot=0,rem=0,mn=0,dd=0;const ow={Hayden:0,Jordyn:0,Joint:0};
+IT.forEach(r=>{tot+=r.a;if(!r.d){rem+=r.a;ow[r.o]=(ow[r.o]||0)+r.a;isDD(r)?dd+=r.a:mn+=r.a}});const left=pp-tot,odT=IT.filter(isOv).reduce((a,r)=>a+r.a,0);
+h+='<div class="stats"><div class="stat"><small>Earned</small><b>'+fm(pp)+'</b></div><div class="stat"><small>Bills still to pay</small><b>'+fm(rem)+'</b><small>of '+fm(tot)+' total</small></div><div class="stat'+(left<0?' neg':'')+'"><small>'+(left<0?'Short by':'Left over after all bills')+'</small><b>'+fm(Math.abs(left))+'</b></div></div>';
+h+='<div class="bar"><i style="width:'+(tot?(tot-rem)/tot*100:0)+'%"></i></div><div class="mu" style="margin:-6px 2px 12px">Paid '+fm(tot-rem)+' · Still to pay '+fm(rem)+'<br>'+esc(PN().h)+' '+fm(ow.Hayden)+' · '+esc(PN().j)+' '+fm(ow.Jordyn)+' · Joint '+fm(ow.Joint)+(odT?'<br><span style="color:var(--bad);font-weight:600">Overdue '+fm(odT)+' – pay first</span>':'')+'<br>Pay by hand '+fm(mn)+' · Direct debits '+fm(dd)+'</div>';
+const bs='style="flex:1;border:1px solid var(--bd);text-align:left;padding:10px 12px"';
+h+='<div class="card" style="padding:12px"><div class="mu" style="margin-bottom:8px">Pay this fortnight (tap to change)</div><div class="row"><button '+bs+' onclick="fi(\'h\')"><span class="mu">'+esc(PN().h)+'</span><br><b class="amt">'+fm(I.h)+'</b></button><button '+bs+' onclick="fi(\'j\')"><span class="mu">'+esc(PN().j)+'</span><br><b class="amt">'+fm(I.j)+'</b></button></div></div>';
+const ITq=qf(IT,true);return h+shortCard(A,left,pp)+dupCard(F)+(ITq.length||!IT.length?plist(ITq):noMatch())+'<button class="p" style="width:100%;margin-top:6px" onclick="fadd()">+ Add an item</button><p class="mu">Removed one by mistake? Add it back with + Add an item.</p>'}
+migrate();
+const dlg=$('dlg');draw();
+</script>
+<dialog id="dd"><form onsubmit="dok();return false"><b>Change fortnight dates</b><label>This fortnight starts on (your pay day)</label><input id="dv" type="date" required><p class="mu">Every fortnight moves with it, and your saved bills and pay move too.</p><div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" onclick="$('dd').close()">Cancel</button><button type="submit" class="p">Save</button></div></form></dialog>
+<dialog id="md"><b id="mt">Edit list</b><p class="mu" style="margin:6px 0 4px">Renaming updates every bill. Options in use can’t be removed.</p><div id="ml"></div><div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" class="p" onclick="$('md').close()">Done</button></div></dialog>
+<dialog id="qd"><form onsubmit="qok();return false"><b id="qt"></b><label id="ql1">Name</label><input id="qn" autocomplete="off"><label id="ql2">Amount</label><input id="qa" type="number" step="0.01" inputmode="decimal"><div id="qpw" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)"><label for="qpp" style="margin-top:0">Part payment</label><div class="row"><input id="qpp" type="number" step="0.01" inputmode="decimal" placeholder="Amount paid" style="flex:1;min-width:0" oninput="qppv()"><button type="button" onclick="qpart()">Record</button></div><p id="qpl" style="margin:8px 0 0;font-weight:600"></p><p class="mu" style="margin:6px 0 0;font-size:13px">Enter what you paid. The rest stays overdue.</p></div><button type="button" class="ovb" id="qov" style="display:none" onclick="qovd()"></button><button type="button" class="lnk" id="qmv" style="display:none;margin-top:10px;font-size:14px" onclick="qmove()">Move to next fortnight →</button><div id="qmv2" style="display:none;margin-top:10px"><p class="mu" id="qmvt" style="margin:0 0 6px"></p><div class="row" style="flex-wrap:wrap"><button type="button" onclick="qmv2('add')">Move & add</button><button type="button" onclick="qmv2('rep')">Move & replace</button></div></div><div class="row" style="justify-content:flex-end;margin-top:16px"><button type="button" class="x" id="qrm" style="display:none;margin-right:auto" onclick="qrem(this)">Remove</button><button type="button" onclick="$('qd').close()">Cancel</button><button type="submit" class="p">Save</button></div></form></dialog>
