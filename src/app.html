@@ -251,6 +251,10 @@ const sgGuess=n=>/usa|trip|holiday|flight|honeymoon|travel/i.test(n)?'Holiday':/
 // saved = what was already saved when entered, plus every savings payment ticked since then
 function savedOf(b){let s2=b.sv0||0;const fp=fpAll();for(const k in fp)fp[k].items.forEach(r=>{if(r.bid===b.id&&r.d&&r.a>0&&(r.pt||0)>=(b.svAt||0))s2+=r.a});return Math.round(s2*100)/100}
 // bills named "...savings" become savings; a "balance" typed on them was really the goal
+function movMig(){if(S.mov)return 0;const fp=fpAll();Object.keys(fp).forEach(k=>{const n=Math.round((pd(k)-AN)/864e5/14),pk=fkey(n-1);if(!fp[pk])return;fp[k].items.forEach(r=>{if((r.co||r.mv)&&r.a>0)fp[pk].mo=Math.round(((fp[pk].mo||0)+r.a)*100)/100})});S.mov=1;return 1}
+// money set aside for bills that moved on goes with them: only what the old fortnight really had spare
+function fundCalc(){const fp=fpAll(),out={};let prev=null;Object.keys(fp).sort().forEach(k=>{const f=fp[k],n=Math.round((pd(k)-AN)/864e5/14),pk=fkey(n-1),pay2=(f.inc.h||0)+(f.inc.j||0),tot2=f.items.reduce((a,r)=>a+(r.a>0?r.a:0),0);
+ const fin=out[pk]?out[pk].fout:0,spare=Math.max(0,pay2+fin-tot2),fout=Math.min(f.mo||0,spare);out[k]={fin:Math.round(fin*100)/100,fout:Math.round(fout*100)/100}});return out}
 function savMig(){let ch=0;S.bills.forEach(b=>{if(b.k||!SAVR.test(b.name||''))return;b.k='save';if(b.bal>=1&&!b.goal)b.goal=b.bal;['bal','bal0','balAt','at0','rate'].forEach(f=>delete b[f]);if(!b.sg)b.sg=sgGuess(b.name);ch++});return ch}
 function savingsView(){const V=S.bills.filter(isSave);let h='<div class="sech">Savings</div>';
  if(!V.length)return h+'<div class="card" style="padding:16px"><b class="amt">No savings yet</b><p class="mu">Open a bill, set its Type to Savings and pick a category. Each time you tick it on the Pay tab, it adds to what you have saved.</p></div>';
@@ -452,7 +456,7 @@ let qof=null;function qovd(){const f=qof;$('qd').close();if(f)f.fn()}
 function qmove(){const f=qmf;$('qd').close();if(f)f()}
 function qok(){const n=$('qn').value.trim(),v=parseFloat($('qa').value),f=qcb;$('qd').close();if(f)f(n,isNaN(v)?0:v)}
 function moveNext(x,how){const f=fcu(),nx=F+1;ensureFn(nx);const to=fpAll()[fkey(nx)];if(!x.od&&!x.co)x.od=ymd(odate(x,fkey(F)));
-f.items.splice(f.items.indexOf(x),1);if(x.bid&&!x.co&&!x.mv)f.items.push({id:'t'+x.id+'@'+fkey(F),bid:x.bid,c:x.c,n:x.n,o:x.o,a:0,d:false,x:1});
+f.mo=Math.round(((f.mo||0)+x.a)*100)/100;f.items.splice(f.items.indexOf(x),1);if(x.bid&&!x.co&&!x.mv)f.items.push({id:'t'+x.id+'@'+fkey(F),bid:x.bid,c:x.c,n:x.n,o:x.o,a:0,d:false,x:1});
 const tg=how&&to.items.find(r=>r.bid===x.bid&&r.a>0&&!r.d&&!r.co);
 if(tg){tg.a=how==='add'?Math.round((tg.a+x.a)*100)/100:x.a;delete tg.x}else{if(!x.mv&&!x.co){x.id='m'+x.id+'@'+fkey(F);x.mv=1}pushU(to,x)}
 persist();draw();const nm=vw(x).n;stat((tg?(how==='add'?'Added '+nm+' to the one in ':'Replaced '+nm+' in '):'Moved '+nm+' to ')+fl(nx));setTimeout(()=>stat(okMsg()),4000)}
@@ -494,7 +498,7 @@ function moi(b,k){const out=[],fp=fpAll();Object.keys(fp).sort().forEach(fk=>fp[
 const bN=(b,k)=>moi(b,k).length||cnt(b);
 const bTot=(b,k)=>{const m=moi(b,k);if(m.length)return Math.round(m.reduce((a,r)=>a+r.a,0)*100)/100;return (b.freq==='Annual'&&!b.mo)?0:b.amt*cnt(b)};
 const bOwed=(b,k)=>{const m=moi(b,k);if(m.length)return Math.round(m.reduce((a,r)=>a+(r.d?0:r.a),0)*100)/100;return Math.max(0,Math.round((bTot(b,k)-b.amt*done(b,k))*100)/100)};
-function migrate(){if(fixShift())persist();if(repair())persist();if(savMig())persist();if(S.v===10)return;
+function migrate(){if(fixShift())persist();if(repair())persist();if(savMig())persist();if(movMig())persist();if(S.v===10)return;
 if(!(S.v>=3)){
 S.bills.forEach(b=>{if(!b.o)b.o=OWN(b.cat)});
 seed.forEach(sb=>{const m=S.bills.find(b=>nk(b.name)===nk(sb.name)&&b.o===sb.o);if(m){m.amt=sb.amt;m.freq=sb.freq;m.day=sb.day;m.mo=sb.mo;m.bal=m.bal||sb.bal;if(m.dd===undefined)m.dd=sb.dd}else S.bills.push(Object.assign({},sb,{id:'m_'+nk(sb.name)+sb.o}))});
@@ -512,7 +516,7 @@ if(!(S.v>=10)){S.bills.forEach(b=>{if(!b.pri)b.pri=priOf(b);if(b.bal>0&&!b.bal0)
 S.v=10;persist()}
 function rollOver(){if(!S.roll)return;const fp=fpAll(),c=fcur();let n=Math.round((pd(S.roll)-AN)/864e5/14),ch=false;
 for(;n<c;n++){const k=fkey(n),f=fp[k];if(!f)continue;const un=f.items.filter(r=>r.a>0&&!r.d);if(!un.length)continue;ensureFn(n+1);const nx=fp[fkey(n+1)];
-un.forEach(r=>{f.items.splice(f.items.indexOf(r),1);if(!r.co){r.od=r.od||ymd(odate(r,k));r.id='o'+r.id+'@'+k;r.co=k}pushU(nx,r)});ch=true}
+un.forEach(r=>{f.mo=Math.round(((f.mo||0)+r.a)*100)/100;f.items.splice(f.items.indexOf(r),1);if(!r.co){r.od=r.od||ymd(odate(r,k));r.id='o'+r.id+'@'+k;r.co=k}pushU(nx,r)});ch=true}
 if(ch)persist()}
 function ensureThrough(n){const ks=Object.keys(fpAll()).sort();if(!ks.length)return;n=Math.min(n,fcur()+27);let i=Math.round((pd(ks[ks.length-1])-AN)/864e5/14)+1,ch=false;for(;i<=n;i++)if(ensureFn(i))ch=true;if(ch)persist()}
 function claimMonth(o,it){if(!dated(o)||o.freq==='Once')return;const mo=ymk(odate(it,fkey(F)));Object.keys(fpAll()).forEach(k=>{if(k===fkey(F))return;S.fp[k].items.forEach(r=>{if(r.bid===o.id&&r.a>0&&!r.d&&!r.co&&!r.mv&&ymk(odate(r,k))===mo){r.a=0;r.x=1}})})}
@@ -630,8 +634,8 @@ return h}
 function welcome(){if(S.bills.length)return'';return '<div class="card" style="padding:16px;border-color:var(--ac)"><div style="font:700 18px var(--f-head);margin-bottom:6px">Welcome – set up in three steps</div><ol style="margin:0;padding-left:20px;line-height:1.7"><li>On the <b>Data</b> tab, enter your two names.</li><li>Here, tap <b>Change dates</b> and pick your pay day, so each fortnight matches your pay.</li><li>Tap <b>+</b> to add each bill: name, amount, how often and due day. Mark debts with their balance, and set bills that can wait as Flexible.</li></ol><p class="mu" style="margin:8px 0 0">Then enter each fortnight\'s pay and tick bills off as you pay them.</p></div>'}
 function pay(){const A=fpAll()[fkey(F)];let h=fnav()+welcome();if(!A)return h+startCard();
 const I=A.inc,pp=I.h+I.j,IT=A.items.map(vw);let tot=0,rem=0,mn=0,dd=0;const ow={Hayden:0,Jordyn:0,Joint:0};
-IT.forEach(r=>{tot+=r.a;if(!r.d){rem+=r.a;ow[r.o]=(ow[r.o]||0)+r.a;isDD(r)?dd+=r.a:mn+=r.a}});const left=pp-tot,odT=IT.filter(isOv).reduce((a,r)=>a+r.a,0);
-h+='<div class="stats"><div class="stat"><small>Earned</small><b>'+fm(pp)+'</b></div><div class="stat"><small>Bills still to pay</small><b>'+fm(rem)+'</b><small>of '+fm(tot)+' total</small></div><div class="stat'+(left<0?' neg':'')+'"><small>'+(left<0?'Short by':'Left over after all bills')+'</small><b>'+fm(Math.abs(left))+'</b></div></div>';
+IT.forEach(r=>{tot+=r.a;if(!r.d){rem+=r.a;ow[r.o]=(ow[r.o]||0)+r.a;isDD(r)?dd+=r.a:mn+=r.a}});const M=fundCalc()[fkey(F)]||{fin:0,fout:0},left=Math.round((pp+M.fin-tot-M.fout)*100)/100,odT=IT.filter(isOv).reduce((a,r)=>a+r.a,0);
+h+='<div class="stats"><div class="stat"><small>Earned</small><b>'+fm(pp)+'</b>'+(M.fin>0?'<small>+ '+fm(M.fin)+' from last fortnight</small>':'')+'</div><div class="stat"><small>Bills still to pay</small><b>'+fm(rem)+'</b><small>of '+fm(tot)+' total</small></div><div class="stat'+(left<0?' neg':'')+'"><small>'+(left<0?'Short by':'Left over after all bills')+'</small><b>'+fm(Math.abs(left))+'</b>'+(M.fout>0?'<small>'+fm(M.fout)+' kept for moved bills</small>':'')+'</div></div>';
 h+='<div class="bar"><i style="width:'+(tot?(tot-rem)/tot*100:0)+'%"></i></div><div class="mu" style="margin:-6px 2px 12px">Paid '+fm(tot-rem)+' · Still to pay '+fm(rem)+'<br>'+esc(PN().h)+' '+fm(ow.Hayden)+' · '+esc(PN().j)+' '+fm(ow.Jordyn)+' · Joint '+fm(ow.Joint)+(odT?'<br><span style="color:var(--bad);font-weight:600">Overdue '+fm(odT)+' – pay first</span>':'')+'<br>Pay by hand '+fm(mn)+' · Direct debits '+fm(dd)+'</div>';
 const bs='style="flex:1;border:1px solid var(--bd);text-align:left;padding:10px 12px"';
 h+='<div class="card" style="padding:12px"><div class="mu" style="margin-bottom:8px">Pay this fortnight (tap to change)</div><div class="row"><button '+bs+' onclick="fi(\'h\')"><span class="mu">'+esc(PN().h)+'</span><br><b class="amt">'+fm(I.h)+'</b></button><button '+bs+' onclick="fi(\'j\')"><span class="mu">'+esc(PN().j)+'</span><br><b class="amt">'+fm(I.j)+'</b></button></div></div>';
