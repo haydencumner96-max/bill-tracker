@@ -1,7 +1,7 @@
 /* Bill Tracker offline support.
    The app's own files: try the network first (so updates arrive), fall back to the saved copy offline.
    Libraries and fonts: saved copy first. Supabase requests are never cached. */
-const VERSION = "2026.11.25-2140";
+const VERSION = "2026.11.27-1515";
 const CACHE = "bt-" + VERSION;
 const SHELL = [
   "./", "./index.html", "./config.js", "./bills-app.js", "./manifest.webmanifest",

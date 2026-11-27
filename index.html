@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bills">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script>window.APP_VERSION="2026.11.25-2140";</script>
+<script>window.APP_VERSION="2026.11.27-1515";</script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.97.0"></script>
 <script src="bills-app.js"></script>
@@ -191,7 +191,7 @@ html[data-view=pc] .fab::after{content:" Add";font-size:15px;font-weight:600;ver
 <b id="dt">Bill</b>
 <label>Name</label><input id="fn">
 <label>Category <button type="button" class="lnk" onclick="manage('cats')">Edit list</button></label><select id="fc" onchange="fsel(this,'fcn')"></select><input id="fcn" placeholder="New category name" style="display:none;margin-top:6px">
-<label>Amount</label><input id="fa" type="number" step="0.01">
+<div id="farow"><label>Amount</label><input id="fa" type="number" step="0.01"></div><div id="planrow" style="display:none"><p class="mu" style="margin:10px 0 0">Afterpay amounts and dates are entered on the Debts tab.</p><button type="button" style="margin-top:8px" onclick="dlg.close();T=1;draw()">Go to Afterpay payments</button></div>
 <label>Frequency <button type="button" class="lnk" onclick="manage('freqs')">Edit list</button></label><select id="ff" onchange="ffc()"></select><div id="ffn" style="display:none;margin-top:6px"><div class="row"><input id="ffnn" placeholder="Name, e.g. Quarterly" style="flex:1;min-width:0"><select id="ffev" style="width:auto"><option value="2">every 2 months</option><option value="3" selected>every 3 months</option><option value="4">every 4 months</option><option value="5">every 5 months</option><option value="6">every 6 months</option><option value="7">every 7 months</option><option value="8">every 8 months</option><option value="9">every 9 months</option><option value="10">every 10 months</option><option value="11">every 11 months</option></select></div></div><div id="dtrow" style="display:none"><label>Date</label><input id="fdt" type="date"></div>
 <div id="dayrow"><label id="fdl">Due day (optional)</label><div class="row"><input id="fd" type="number" min="1" max="31" placeholder="Day"><select id="fm"></select></div></div>
 <div id="endrow"><label>End date (optional)</label><div class="row"><input id="fend" type="date" style="flex:1;min-width:0"><button type="button" onclick="$('fend').value=''">Clear</button></div></div>
@@ -207,7 +207,7 @@ function setView(v){VP=v;try{localStorage.setItem('bt.view',v)}catch(e){}applyVi
 try{addEventListener('resize',()=>{if(VP==='auto')applyView()})}catch(e){}
 applyView();
 const K='billtracker.app.v1',MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const N={Weekly:4,Fortnight:2,Month:1,Annual:1,Once:1};
+const N={Weekly:4,Fortnight:2,Month:1,Annual:1,Once:1,Plan:0};
 const seed=[].map((r,i)=>({id:'b'+i,cat:r[0],name:r[1],amt:r[2]||0,freq:r[3],day:r[4]||0,acct:r[5]||'',bal:r[6]||0,mo:r[7]||0,o:r[8],dd:!!r[9]}));
 const DEFN=['Hayden','Jordyn'];
 const PN=()=>({h:(S.names&&S.names.h)||DEFN[0],j:(S.names&&S.names.j)||DEFN[1]});
@@ -225,18 +225,18 @@ const isDD=x=>x.dd===undefined?DDN.some(k=>(x.name||x.n||'').toLowerCase().inclu
 const pill=(x,fn)=>'<span class="pm'+(isDD(x)?' dd':'')+'">'+(isDD(x)?'Direct debit':'Manual')+'</span>';
 let LS='cat';function sls(v){LS=v;draw()}
 const ordd=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
-const FQ={Weekly:'Weekly',Fortnight:'Fortnightly',Month:'Monthly',Annual:'Yearly',Once:'One-off'},FQB=['Weekly','Fortnight','Month','Annual','Once'];
+const FQ={Weekly:'Weekly',Fortnight:'Fortnightly',Month:'Monthly',Annual:'Yearly',Once:'One-off',Plan:'Afterpay payments'},FQB=['Weekly','Fortnight','Month','Annual','Once'];
 const fqCus=()=>((S.lists||{}).freqs||[]),fqLbl=k=>(((S.lists||{}).fql||{})[k])||FQ[k]||k;
 const fql=b=>b.fqn||(b.freq==='Annual'&&b.ev&&b.ev!==12?'Every '+b.ev+' months':fqLbl(b.freq));
 const inMo=(b,m1)=>{if(b.freq!=='Annual')return true;if(!b.mo)return false;const e=b.ev||12;return ((m1-b.mo)%e+e)%e===0};
 const evMonths=b=>{const o=[];for(let m=0;m<12;m++)if(inMo(b,m+1))o.push(MN[m]);return o};
 function nextDue(b){const d=nextDue0(b),e=endD(b);return d&&e&&d>e?null:d}
-function nextDue0(b){const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+function nextDue0(b){const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());if(isPlan(b)){const x=planPays(b).find(x=>x.d>=t);return x?x.d:null}
  if(b.freq==='Once')return b.dt?pd(b.dt):null;
  if(b.freq==='Month'&&b.day){for(let i=0;i<3;i++){const m=new Date(t.getFullYear(),t.getMonth()+i,1),d=new Date(m.getFullYear(),m.getMonth(),Math.min(b.day,dim(m)));if(d>=t)return d}}
  if(b.freq==='Annual'&&b.mo){for(let i=0;i<14;i++){const m=new Date(t.getFullYear(),t.getMonth()+i,1);if(!inMo(b,m.getMonth()+1))continue;const d=new Date(m.getFullYear(),m.getMonth(),Math.min(b.day||1,dim(m)));if(d>=t)return d}}
  return null}
-function dueText(b){if(b.freq==='Weekly')return 'Every week';if(b.freq==='Fortnight')return 'Every pay';if(b.freq==='Once')return b.dt?pd(b.dt).getDate()+' '+MN[pd(b.dt).getMonth()]+' '+pd(b.dt).getFullYear():'No date';
+function dueText(b){if(isPlan(b))return 'Set on the Debts tab';if(b.freq==='Weekly')return 'Every week';if(b.freq==='Fortnight')return 'Every pay';if(b.freq==='Once')return b.dt?pd(b.dt).getDate()+' '+MN[pd(b.dt).getMonth()]+' '+pd(b.dt).getFullYear():'No date';
  if(b.freq==='Annual')return b.mo?(b.day||1)+' '+evMonths(b).join('/'):'Pick a month';return b.day?ordd(b.day):'Any day'}
 const perMonth=b=>b.freq==='Weekly'?b.amt*52/12:b.freq==='Fortnight'?b.amt*26/12:b.freq==='Month'?b.amt:b.freq==='Annual'?b.amt/(b.ev||12):0;
 function listView(){const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());
@@ -246,7 +246,7 @@ function listView(){const t=new Date(now.getFullYear(),now.getMonth(),now.getDat
  if(LS==='cal')return tabsH+(B0.length&&!B.length?noMatch():calView(B));
  let h='<div class="stats plain"><div class="stat"><small>Regular bills</small><b>'+reg.length+'</b></div><div class="stat"><small>About per month</small><b>'+fm(mon)+'</b></div><div class="stat"><small>Upcoming one-offs</small><b>'+fm(oo.reduce((a,b)=>a+b.amt,0))+'</b></div></div>';
  h+=tabsH;
- const row=b=>{const nd=nextDue(b),ov=hasOv(b);return '<tr'+(ov?' class="ovr"':'')+' onclick="edit(\''+b.id+'\')"><td><span class="ln">'+esc(b.name)+(ov?'<span class="tag late">overdue</span>':'')+'</span><span class="sub">'+esc(who(b.o))+' · '+(priOf(b)==='F'?'Flexible · ':'')+(isDD(b)?'Direct debit':'Manual')+(b.acct&&!/^(manual|direct debits?)$/i.test(b.acct.trim())?' · '+esc(b.acct):'')+'</span></td><td>'+fql(b)+'</td><td>'+dueText(b)+(nd&&b.freq!=='Once'?'<span class="sub">Next '+nd.getDate()+' '+MN[nd.getMonth()]+'</span>':'')+(b.end&&b.freq!=='Once'?'<span class="sub">'+(ended(b)?'Ended ':'Ends ')+endTxt(b)+'</span>':'')+'</td><td class="r">'+(b.amt?fm(b.amt):'–')+'</td></tr>'};
+ const row=b=>{const nd=nextDue(b),ov=hasOv(b);return '<tr'+(ov?' class="ovr"':'')+' onclick="edit(\''+b.id+'\')"><td><span class="ln">'+esc(b.name)+(ov?'<span class="tag late">overdue</span>':'')+'</span><span class="sub">'+esc(who(b.o))+' · '+(priOf(b)==='F'?'Flexible · ':'')+(isDD(b)?'Direct debit':'Manual')+(b.acct&&!/^(manual|direct debits?)$/i.test(b.acct.trim())?' · '+esc(b.acct):'')+'</span></td><td>'+fql(b)+'</td><td>'+dueText(b)+(nd&&b.freq!=='Once'?'<span class="sub">Next '+nd.getDate()+' '+MN[nd.getMonth()]+'</span>':'')+(b.end&&b.freq!=='Once'?'<span class="sub">'+(ended(b)?'Ended ':'Ends ')+endTxt(b)+'</span>':'')+'</td><td class="r">'+(isPlan(b)?fm(planOwing(b)):b.amt?fm(b.amt):'–')+'</td></tr>'};
  const rowP=b=>ended(b)?row(b).replace('</span></td><td>','</span><span class="tag">Ended</span></td><td>'):past(b)?row(b).replace('</td><td>One-off','<span class="tag">Past</span></td><td>One-off'):row(b);
  let body='';
  if(LS==='cat'){const g={};B.forEach(b=>(g[b.cat]=g[b.cat]||[]).push(b));for(const c in g)body+='<tr class="gh"><td colspan="4">'+esc(c)+'</td></tr>'+g[c].sort((a,b)=>a.name.localeCompare(b.name)).map(rowP).join('')}
@@ -261,6 +261,46 @@ function debtNow(b){return b.bal>0?Math.max(0,Math.round((b.bal-debtPaid(b))*100
 function payoff(b){const B=debtNow(b),P=perMonth(b);if(!(B>0))return{m:0};if(!(P>0))return{m:null,why:'no regular payment set'};
  const r=(b.rate||0)/1200;if(r>0){if(P<=B*r)return{m:null,why:'payment does not cover the interest'};const m=Math.ceil(-Math.log(1-r*B/P)/Math.log(1+r));return{m,int:Math.max(0,m*P-B)}}
  return{m:Math.ceil(B/P-1e-9)}}
+// ---- Afterpay: dated amounts; each fortnight gets one Afterpay line with the total due in it ----
+const isPlan=b=>!!b&&b.freq==='Plan';
+const planPays=b=>(b.plan||[]).map(x=>({id:x.id,d:pd(x.d),a:x.a,late:!!x.late})).sort((x,y)=>x.d-y.d);
+const planTotal=b=>Math.round((b.plan||[]).reduce((s2,x)=>s2+x.a,0)*100)/100;
+const fnOf=d=>Math.floor(Math.round((d-AN)/864e5)/14),fkOf=d=>fkey(fnOf(d));
+function planWant(b){const ck=fkey(fcur()),w={};planPays(b).forEach(x=>{let k=fkOf(x.d);if(k<ck){if(!x.late)return;k=ck}w[k]=Math.round(((w[k]||0)+x.a)*100)/100});return w}
+// make each fortnight's Afterpay line match what is due in it (paid lines are left alone)
+function planSync(b){const fp=fpAll(),ck=fkey(fcur()),w=planWant(b);let last=fcur();Object.keys(w).forEach(k=>{last=Math.max(last,Math.round((pd(k)-AN)/864e5/14))});ensureThrough(last);
+ Object.keys(fp).forEach(k=>{if(k<ck)return;const f=fp[k],mine=f.items.filter(r=>r.bid===b.id&&!r.co&&!r.mv&&!r.part&&!r.rest),paid=mine.filter(r=>r.d&&r.a>0).reduce((a,r)=>a+r.a,0),un=mine.filter(r=>!r.d);
+  const need=Math.round(((w[k]||0)-paid)*100)/100;
+  if(need>0.004){if(un.length){un[0].a=need;delete un[0].x;un.slice(1).forEach(r=>f.items.splice(f.items.indexOf(r),1))}else pushU(f,mkItem(b,Math.round((pd(k)-AN)/864e5/14),need,null))}
+  else un.forEach(r=>f.items.splice(f.items.indexOf(r),1))});b.amt=planTotal(b)}
+function planOwing(b){let o=0;const fp=fpAll(),seen=new Set(Object.keys(fp));for(const k in fp)fp[k].items.forEach(r=>{if(r.bid===b.id&&!r.d&&r.a>0)o+=r.a});const w=planWant(b);for(const k in w)if(!seen.has(k))o+=w[k];return Math.round(o*100)/100}
+function apBill(){let b=S.bills.find(isPlan);if(!b){const cat=catList().find(c=>/credit/i.test(c))||'Afterpay';b={id:'b'+Date.now(),name:'Afterpay',cat,amt:0,freq:'Plan',day:0,acct:'',dd:false,bal:0,mo:0,o:'Joint',rate:0,pri:'E',plan:[]};S.bills.push(b);addList('cats',cat)}b.plan=b.plan||[];return b}
+function apPut(d,a){const b=apBill();const e={id:'p'+Date.now()+Math.floor(Math.random()*1e3),d,a:Math.round(a*100)/100};if(fkOf(pd(d))<fkey(fcur()))e.late=1;b.plan.push(e);planSync(b);persist();draw();stat('Afterpay '+fm(a)+' added for '+pd(d).getDate()+' '+MN[pd(d).getMonth()]);setTimeout(()=>stat(okMsg()),4000)}
+function apAdd(){const d=$('apd').value,a=parseFloat($('apa').value);if(!d){$('apd').focus();return}if(!(a>0)){$('apa').focus();return}AP_D=d;apPut(d,a)}
+function apRem(id){const b=S.bills.find(isPlan);if(!b)return;b.plan=(b.plan||[]).filter(x=>x.id!==id);planSync(b);persist();draw()}
+let AP_D='';
+// one-off "Afterpay" bills from before become dated amounts in the new section
+function apMig(){if(S.apMig)return 0;S.apMig=1;const ones=S.bills.filter(b=>b.freq==='Once'&&/^afterpay$/i.test((b.name||'').trim())&&b.dt);if(!ones.length||S.bills.some(isPlan))return 1;
+ const last=ones.slice().sort((a,b)=>a.dt<b.dt?1:-1)[0],P={id:'bap'+Date.now(),name:'Afterpay',cat:last.cat||'Afterpay',amt:0,freq:'Plan',day:0,acct:last.acct||'',dd:!!last.dd,bal:0,mo:0,o:last.o||'Joint',rate:0,pri:last.pri||'E',plan:[]};
+ const ids=new Set(ones.map(b=>b.id)),fp=fpAll();
+ ones.forEach(b=>{let a=b.amt;for(const k in fp){const its=fp[k].items.filter(r=>r.bid===b.id&&r.a>0);if(its.length===1){a=its[0].a;break}}P.plan.push({id:'p'+b.id,d:b.dt,a})});
+ for(const k in fp){const f=fp[k];f.items.forEach(r=>{if(ids.has(r.bid)){r.bid=P.id;r.n='Afterpay';r.c=P.cat;r.o=P.o}});
+  const un=f.items.filter(r=>r.bid===P.id&&!r.d&&r.a>0&&!r.co&&!r.mv&&!r.part&&!r.rest);if(un.length>1){un[0].a=Math.round(un.reduce((a,r)=>a+r.a,0)*100)/100;un.slice(1).forEach(r=>f.items.splice(f.items.indexOf(r),1))}
+  f.items=f.items.filter(r=>!(r.bid===P.id&&!(r.a>0)&&!r.d))}
+ S.bills=S.bills.filter(b=>!ids.has(b.id));P.amt=planTotal(P);S.bills.push(P);return 1}
+function apView(){const b=S.bills.find(isPlan),ck=fkey(fcur()),n0=fcur();let h='<div class="sech">Afterpay</div>';
+ const fpk=fpAll(),lineOf=k=>{const f=fpk[k];return f?f.items.filter(r=>b&&r.bid===b.id&&r.a>0&&!r.co):[]};
+ if(b){const tw=lineOf(ck).reduce((a,r)=>a+r.a,0),nx=lineOf(fkey(n0+1)).reduce((a,r)=>a+r.a,0);
+  h+='<div class="stats plain"><div class="stat"><small>Still to pay</small><b>'+fm(planOwing(b))+'</b></div><div class="stat"><small>This fortnight</small><b>'+fm(tw)+'</b></div><div class="stat"><small>Next fortnight</small><b>'+fm(nx)+'</b></div></div>'}
+ h+='<div class="card" style="padding:12px 14px"><div class="mu" style="margin-bottom:8px">Add an Afterpay payment</div><div class="row" style="flex-wrap:nowrap"><input id="apd" type="date" value="'+(AP_D||ymd(now))+'" style="flex:1.2;min-width:0" aria-label="Date due"><input id="apa" type="number" step="0.01" inputmode="decimal" placeholder="Amount" style="flex:1;min-width:0" aria-label="Amount"><button class="p" onclick="apAdd()">Add</button></div></div>';
+ if(!b||!(b.plan||[]).length)return h+'<p class="mu">Each fortnight on the Pay tab shows one Afterpay line with the total of everything due in it.</p>';
+ const g={};planPays(b).forEach(x=>{let k=fkOf(x.d);if(k<ck){if(!x.late)return;k=ck}(g[k]=g[k]||[]).push(x)});const ks=Object.keys(g).sort();
+ if(!ks.length)return h+'<p class="mu">No Afterpay payments coming up.</p>';
+ ks.forEach(k=>{const n=Math.round((pd(k)-AN)/864e5/14),L=g[k],tot=L.reduce((a,x)=>a+x.a,0),its=lineOf(k),paid=its.length>0&&its.every(r=>r.d);
+  h+='<div class="grp"><div class="cat row sp"><span>'+fl(n)+'</span><span>'+(paid?'<span style="color:var(--ok)">Paid ✓ </span>':'')+fm(tot)+'</span></div><div class="card">';
+  L.forEach(x=>{h+='<div class="bill"><div class="m"><div class="n">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][x.d.getDay()]+' '+x.d.getDate()+' '+MN[x.d.getMonth()]+'</div></div><div class="amt">'+fm(x.a)+'</div><button class="x" aria-label="Remove" style="margin-left:8px;padding:6px 10px" onclick="apRem(\''+x.id+'\')">✕</button></div>'});
+  h+='</div></div>'});
+ return h}
 const SAVR=/saving|emergency fund/i;
 const kindOf=b=>b.k||(SAVR.test(b.name||'')?'save':(b.bal>0?'debt':'bill'));
 const isSave=b=>!!b&&kindOf(b)==='save';
@@ -288,7 +328,7 @@ function savingsView(){const V=S.bills.filter(isSave);let h='<div class="sech">S
   h+='</div></div>'});
  return h+'<p class="mu">Ticking a savings payment on the Pay tab adds it here. Unticking takes it off.</p>'}
 const mAhead=m=>{const d=new Date(now.getFullYear(),now.getMonth()+m,1);return MN[d.getMonth()]+' '+d.getFullYear()};
-function debtsView(){const D=S.bills.filter(b=>!isSave(b)&&(b.bal>0||debtNow(b)>0));if(!D.length)return '<div class="sech" style="margin-top:2px">Debts</div><div class="card" style="padding:16px"><b class="amt">No debts yet</b><p class="mu">Open a bill such as a credit card or loan, set its Type to Debt and enter the balance owing.</p></div>'+savingsView();
+function debtsView(){const D=S.bills.filter(b=>!isSave(b)&&(b.bal>0||debtNow(b)>0));if(!D.length)return '<div class="sech" style="margin-top:2px">Debts</div><div class="card" style="padding:16px"><b class="amt">No debts yet</b><p class="mu">Open a bill such as a credit card or loan, set its Type to Debt and enter the balance owing.</p></div>'+apView()+savingsView();
  const tot=D.reduce((a,b)=>a+debtNow(b),0),paid=D.reduce((a,b)=>a+Math.max(0,(b.bal0||b.bal)-debtNow(b)),0),P=D.map(payoff),known=P.filter(x=>x.m!==null),last=known.length===P.length?Math.max(0,...P.map(x=>x.m)):null;
  let h='<div class="sech" style="margin-top:2px">Debts</div><div class="stats plain"><div class="stat"><small>Total owing</small><b>'+fm(tot)+'</b></div><div class="stat"><small>Paid off so far</small><b>'+fm(paid)+'</b></div><div class="stat"><small>Debt-free by</small><b>'+(last===null?'–':last===0?'Now':mAhead(last))+'</b></div></div>';
  const live=D.filter(b=>debtNow(b)>0),rated=live.filter(b=>b.rate>0);let tip='';
@@ -299,7 +339,7 @@ function debtsView(){const D=S.bills.filter(b=>!isSave(b)&&(b.bal>0||debtNow(b)>
   const when=n<=0?'<span style="color:var(--ok);font-weight:600">Paid off</span>':po.m===null?'<span style="color:var(--bad);font-weight:600">'+(po.why==='no regular payment set'?'Set a regular payment to see a payoff date':'Payment does not cover the interest')+'</span>':'Paid off about '+mAhead(po.m)+' ('+po.m+' month'+(po.m===1?'':'s')+')'+(po.int?' · about '+fm(po.int)+' interest':'');
   h+='<div class="bill" style="flex-wrap:wrap" onclick="edit(\''+b.id+'\')">'+av(b.cat)+'<div class="m"><div class="n">'+esc(b.name)+'</div><div class="s">'+esc(who(b.o))+(perMonth(b)?' · '+fm(perMonth(b))+'/month':'')+(b.rate?' · '+b.rate+'% a year':'')+'</div><div class="s">'+when+'</div></div><div class="amt">'+fm(n)+'</div>'
    +'<div style="flex-basis:100%;padding-left:46px"><div class="bar" style="margin:6px 0 2px"><i style="width:'+pc.toFixed(1)+'%"></i></div><div class="s" style="font-size:12.5px;color:var(--mu)">'+fm(st-n>0?st-n:0)+' paid of '+fm(st)+'</div></div></div>'});
- return h+'</div><p class="mu">Balances go down when you tick a payment on the Pay or Bills tab, and go back up if you untick it. Payoff dates use each bill\'s regular amount'+(D.some(b=>!b.rate)?'; debts without an interest rate are shown before interest':'')+'. Tap a debt to update its balance from your statement.</p>'+savingsView()}
+ return h+'</div><p class="mu">Balances go down when you tick a payment on the Pay or Bills tab, and go back up if you untick it. Payoff dates use each bill\'s regular amount'+(D.some(b=>!b.rate)?'; debts without an interest rate are shown before interest':'')+'. Tap a debt to update its balance from your statement.</p>'+apView()+savingsView()}
 // short fortnight: which flexible bills to move
 let SFsel=null,SFkey='';
 function shortPlan(A,short){const its=A.items.filter(r=>r.a>0&&!r.d&&!r.co&&!r.ovd&&isFlex(r)),rank=r=>{const b=bl(r)||{};return /saving|extra/i.test(b.cat||'')?0:/allowance/i.test(b.name||'')?1:/subscription/i.test(b.cat||'')?2:3};
@@ -351,10 +391,11 @@ function mrefill(rn){let c=$('fc').value,a=$('fp').value;if(rn&&mlk!=='scats'){i
 let FQO={};
 function fillFq(b){const e=$('ff'),cur=b.fqn?'c:'+b.fqn:(b.freq||'Month');FQO={};let h='';const add=(v,l,q)=>{FQO[v]=q;h+='<option value="'+esc(v)+'">'+esc(l)+'</option>'};
  FQB.forEach(k=>{if(k==='Once'){fqCus().forEach(c=>add('c:'+c.n,c.n+' (every '+c.ev+' months)',{freq:'Annual',ev:c.ev,fqn:c.n}));if(b.fqn&&!fqCus().some(c=>c.n===b.fqn))add(cur,b.fqn,{freq:'Annual',ev:b.ev,fqn:b.fqn})}if(!hid('freqs').includes(k)||cur===k)add(k,k==='Once'?fqLbl(k)+' (single payment)':fqLbl(k),{freq:k})});
- h+='<option value="'+NEWV+'">+ Add new…</option>';e.innerHTML=h;e.value=cur;if(e.value!==cur)e.selectedIndex=0;$('ffnn').value='';$('ffev').value='3';ffc()}
+ if(cur==='Plan')add('Plan',fqLbl('Plan'),{freq:'Plan'});h+='<option value="'+NEWV+'">+ Add new…</option>';e.innerHTML=h;e.value=cur;if(e.value!==cur)e.selectedIndex=0;$('ffnn').value='';$('ffev').value='3';ffc()}
 function fqRead(){const v=$('ff').value;if(v===NEWV){const ev=+$('ffev').value||3,n=$('ffnn').value.trim()||('Every '+ev+' months');S.lists=S.lists||{cats:[],accts:[]};S.lists.freqs=S.lists.freqs||[];const ex=S.lists.freqs.find(c=>c.n.toLowerCase()===n.toLowerCase());if(ex)return {freq:'Annual',ev:ex.ev,fqn:ex.n};S.lists.freqs.push({n,ev});return {freq:'Annual',ev,fqn:n}}return FQO[v]||{freq:v}}
 function fkc(){const k=$('fk').value;$('debtrow').style.display=k==='debt'?'':'none';$('saverow').style.display=k==='save'?'':'none'}
-function ffc(){const v=$('ff').value,o=v==='Once',nw=v===NEWV,q=FQO[v]||{},ann=nw||q.freq==='Annual';$('dtrow').style.display=o?'':'none';$('dayrow').style.display=o?'none':'';$('endrow').style.display=o?'none':'';$('ffn').style.display=nw?'':'none';if(nw)$('ffnn').focus();
+function ffc(){ffc0();const pl=$('ff').value==='Plan';$('farow').style.display=pl?'none':'';$('planrow').style.display=pl?'':'none';if(pl){$('dayrow').style.display='none';$('endrow').style.display='none';$('dtrow').style.display='none'}}
+function ffc0(){const v=$('ff').value,o=v==='Once',nw=v===NEWV,q=FQO[v]||{},ann=nw||q.freq==='Annual';$('dtrow').style.display=o?'':'none';$('dayrow').style.display=o?'none':'';$('endrow').style.display=o?'none':'';$('ffn').style.display=nw?'':'none';if(nw)$('ffnn').focus();
  $('fdl').textContent=ann?(q.ev||nw?'Due day and first month':'Due day and month'):'Due day (optional)';$('fm').style.display=ann?'':'none'}
 function fsel(sel,nid){const n=$(nid);n.style.display=sel.value===NEWV?'':'none';if(sel.value===NEWV)n.focus()}
 const val=(sid,nid)=>{const v=$(sid).value;return v===NEWV?$(nid).value.trim():v};
@@ -383,7 +424,7 @@ startFirebase()})();
 function setCode(){ask('Sync code',{name:1,noamt:1,label:'Type the same private code on every device (6 or more characters)'},n=>{n=(n||'').trim().toLowerCase().replace(/\s+/g,'-');if(n.length<6){stat('Sync code must be 6 or more characters');return}try{localStorage.setItem('bt.code',n)}catch(e){}location.reload()})}
 function noCode(b){if(!b.dataset.c){b.dataset.c=1;b.textContent='Tap again to stop syncing';return}try{localStorage.removeItem('bt.code')}catch(e){}location.reload()}
 const mk=()=>Y+'-'+M;
-const active=b=>(endD(b)&&endD(b)<new Date(Y,M,1)&&!moi(b,mk()).length)?false:b.freq==='Once'?!!(b.dt&&pd(b.dt).getFullYear()===Y&&pd(b.dt).getMonth()===M):(b.freq!=='Annual'||!b.mo||inMo(b,M+1));
+const active=b=>isPlan(b)?moi(b,mk()).length>0:(endD(b)&&endD(b)<new Date(Y,M,1)&&!moi(b,mk()).length)?false:b.freq==='Once'?!!(b.dt&&pd(b.dt).getFullYear()===Y&&pd(b.dt).getMonth()===M):(b.freq!=='Annual'||!b.mo||inMo(b,M+1));
 const cnt=b=>b.amt?N[b.freq]:0;
 function paidAmt(b,k){const m=moi(b,k);if(m.length)return m.reduce((a,r)=>a+(r.d?r.a:0),0);return b.amt*Math.min((S.paid[k]||{})[b.id]||0,cnt(b))}
 const done=(b,k)=>{k=k||mk();const m=moi(b,k);if(m.length)return m.filter(r=>r.d).length;return Math.min((S.paid[k]||{})[b.id]||0,cnt(b))};
@@ -425,8 +466,8 @@ if(T===3)h=pay();if(T===4)h=chart();if(T===5)h=listView();{const qn=$('qcnt');if
 function edit(id){addCtx=null;cur=id||null;const b=S.bills.find(x=>x.id===id)||{cat:'',name:'',amt:'',freq:'Month',day:'',acct:'',bal:'',mo:0};
 $('dt').textContent=id?'Edit bill':'New bill';$('fn').value=b.name;fill('fc','fcn',catList(),b.cat);$('fa').value=b.amt;$('fd').value=b.day||'';fill('fp','fpn',acctList(),b.acct,'Not set');$('fdd').value=isDD(b)?'1':'0';{const op=$('fo').options;if(op&&op.length>2){op[1].text=PN().h;op[2].text=PN().j}}$('fo').value=b.o||OWN(b.cat);$('fdt').value=b.dt||ymd(new Date());ffc();$('fb').value=b.id?(debtNow(b)||''):'';$('fk').value=b.id?kindOf(b):'bill';fill('fsg','fsgn',savCatList(),b.sg||(b.id?sgGuess(b.name):'General'));$('fgl').value=b.goal||'';$('fsv').value=b.id?(savedOf(b)||''):'';fkc();$('fir').value=b.rate||'';$('fpr').value=priOf(b);
 $('fm').innerHTML='<option value="0">Month</option>'+MN.map((m,i)=>'<option value="'+(i+1)+'">'+m+'</option>').join('');$('fm').value=b.mo||0;$('fend').value=b.end||'';fillFq(b);$('del').style.display=id?'':'none';$('del').textContent='Delete';delete $('del').dataset.c;$('dlg').showModal()}
-function save(){const old=S.bills.find(x=>x.id===cur),o={id:cur||'b'+Date.now(),name:$('fn').value.trim(),cat:val('fc','fcn')||'Other',amt:+$('fa').value||0,freq:$('ff').value,day:+$('fd').value||0,acct:val('fp','fpn'),dd:$('fdd').value==='1',bal:+$('fb').value||0,mo:+$('fm').value||0,o:$('fo').value,rate:+$('fir').value||0,pri:$('fpr').value==='F'?'F':'E'};{const q=fqRead();o.freq=q.freq;if(q.ev){o.ev=q.ev;o.fqn=q.fqn}}if(o.freq!=='Once'&&$('fend').value)o.end=$('fend').value;o.k=$('fk').value;if(o.k!=='debt'){o.bal=0;o.rate=0}if(o.k==='save'){o.sg=val('fsg','fsgn')||'General';o.goal=+$('fgl').value||0;const cur=old?savedOf(old):0,v=+$('fsv').value||0;if(old&&Math.abs(cur-v)<0.005){if(old.sv0)o.sv0=old.sv0;if(old.svAt)o.svAt=old.svAt}else if(v>0||old){o.sv0=v;o.svAt=Date.now()}addList('scats',o.sg)}if(old&&Math.abs(debtNow(old)-o.bal)<0.005){o.bal=old.bal;o.balAt=old.balAt||0;if(old.bal0)o.bal0=old.bal0;if(old.at0)o.at0=old.at0}else if(o.bal>0){o.balAt=Date.now();o.bal0=old&&old.bal0?old.bal0:o.bal;o.at0=old&&old.at0?old.at0:Date.now()}if(o.freq==='Once'){o.dt=$('fdt').value||ymd(new Date());o.day=+o.dt.split('-')[2];o.mo=0}
-if(!o.name)return;addList('cats',o.cat);addList('accts',o.acct);
+function save(){const old=S.bills.find(x=>x.id===cur),o={id:cur||'b'+Date.now(),name:$('fn').value.trim(),cat:val('fc','fcn')||'Other',amt:+$('fa').value||0,freq:$('ff').value,day:+$('fd').value||0,acct:val('fp','fpn'),dd:$('fdd').value==='1',bal:+$('fb').value||0,mo:+$('fm').value||0,o:$('fo').value,rate:+$('fir').value||0,pri:$('fpr').value==='F'?'F':'E'};{const q=fqRead();o.freq=q.freq;if(q.ev){o.ev=q.ev;o.fqn=q.fqn}}if(o.freq!=='Once'&&$('fend').value)o.end=$('fend').value;if(o.freq==='Plan'){o.plan=(old&&old.plan)||[];o.amt=planTotal(o);o.day=0;o.mo=0;delete o.end}o.k=$('fk').value;if(o.k!=='debt'){o.bal=0;o.rate=0}if(o.k==='save'){o.sg=val('fsg','fsgn')||'General';o.goal=+$('fgl').value||0;const cur=old?savedOf(old):0,v=+$('fsv').value||0;if(old&&Math.abs(cur-v)<0.005){if(old.sv0)o.sv0=old.sv0;if(old.svAt)o.svAt=old.svAt}else if(v>0||old){o.sv0=v;o.svAt=Date.now()}addList('scats',o.sg)}if(old&&Math.abs(debtNow(old)-o.bal)<0.005){o.bal=old.bal;o.balAt=old.balAt||0;if(old.bal0)o.bal0=old.bal0;if(old.at0)o.at0=old.at0}else if(o.bal>0){o.balAt=Date.now();o.bal0=old&&old.bal0?old.bal0:o.bal;o.at0=old&&old.at0?old.at0:Date.now()}if(o.freq==='Once'){o.dt=$('fdt').value||ymd(new Date());o.day=+o.dt.split('-')[2];o.mo=0}
+if(!o.name)return;if(!old&&o.freq==='Once'&&/^afterpay$/i.test(o.name)&&o.amt>0&&o.dt){addCtx=null;$('dlg').close();apPut(o.dt,o.amt);return}addList('cats',o.cat);addList('accts',o.acct);
 if(!old&&addCtx==='pay'){const dup=S.bills.find(x=>nk(x.name)===nk(o.name)&&x.o===o.o&&x.freq!=='Once');if(dup){const A=fcu(),e=A.items.find(r=>r.bid===dup.id&&!r.co);if(e){e.a=o.amt||e.a;e.d=false;delete e.x}else claimMonth(dup,pushU(A,mkItem(dup,F,o.amt||stdAmt(dup))));addCtx=null;persist();$('dlg').close();draw();return}}
 if(old&&(old.amt!==o.amt||old.day!==o.day||old.freq!==o.freq||(old.ev||0)!==(o.ev||0)||old.mo!==o.mo||old.dt!==o.dt||(old.end||'')!==(o.end||'')))stampOd(old.id);
 let swap=false;if(old&&((old.freq==='Once')!==(o.freq==='Once'))){swap=true;o.id='b'+Date.now();Object.keys(fpAll()).forEach(k=>{S.fp[k].items=S.fp[k].items.filter(r=>!(r.bid===old.id&&!r.d))})}
@@ -496,11 +537,11 @@ const perPayB=b=>b.freq==='Weekly'||b.freq==='Fortnight'||(b.freq==='Month'&&!b.
 function pruneEnd(b){const e=endD(b);if(!e)return 0;let ch=0;const fp=fpAll();Object.keys(fp).forEach(k=>{const f=fp[k],n0=f.items.length;f.items=f.items.filter(r=>!(r.bid===b.id&&!r.d&&!r.co&&!r.mv&&!r.ovd&&!r.part&&!r.rest&&odate(r,k)>e));ch+=n0-f.items.length});return ch}
 function isFinal(r,k){const b=bl(r),e=endD(b);if(!e||r.co||!(r.a>0))return false;const d=odate(r,k);if(d>e)return false;let nx;if(perPayB(b)){const a=pd(k);nx=new Date(a.getFullYear(),a.getMonth(),a.getDate()+14)}else{const st=b.freq==='Annual'?(b.ev||12):1;nx=new Date(d.getFullYear(),d.getMonth()+st,1);nx=new Date(nx.getFullYear(),nx.getMonth(),Math.min(bday(b)||1,dim(nx)))}return nx>e}
 function dueDate(b,n){const d=dueDate0(b,n),e=endD(b);return d&&e&&d>e?null:d}
-function dueDate0(b,n){if(!b.amt||b.freq==='Weekly'||b.freq==='Fortnight')return null;const a=fdate(n);if(b.freq==='Once'){if(!b.dt)return null;const d=pd(b.dt),z=new Date(a.getFullYear(),a.getMonth(),a.getDate()+14);return d>=a&&d<z?d:null}if(!bday(b))return null;
+function dueDate0(b,n){if(isPlan(b))return null;if(!b.amt||b.freq==='Weekly'||b.freq==='Fortnight')return null;const a=fdate(n);if(b.freq==='Once'){if(!b.dt)return null;const d=pd(b.dt),z=new Date(a.getFullYear(),a.getMonth(),a.getDate()+14);return d>=a&&d<z?d:null}if(!bday(b))return null;
 for(let k=0;k<14;k++){const d=new Date(a.getFullYear(),a.getMonth(),a.getDate()+k);if(hits(b,d))return d}return null}
 const halfOld=b=>Math.round(b.amt/2*100)/100;
 function stdAmt(b){return b.freq==='Weekly'?b.amt*2:(b.freq==='Month'&&!b.day?Math.round(b.amt*12/26*100)/100:b.amt)}
-function dueAmt(b,n){if(!b.amt)return 0;{const e=endD(b);if(e){const a=fdate(n);if(a>e)return 0;if(b.freq==='Weekly'&&new Date(a.getFullYear(),a.getMonth(),a.getDate()+7)>e)return b.amt}}if(b.freq==='Weekly'||b.freq==='Fortnight')return stdAmt(b);if(b.freq==='Month'&&!b.day)return stdAmt(b);return dueDate(b,n)?b.amt:0}
+function dueAmt(b,n){if(isPlan(b))return planWant(b)[fkey(n)]||0;if(!b.amt)return 0;{const e=endD(b);if(e){const a=fdate(n);if(a>e)return 0;if(b.freq==='Weekly'&&new Date(a.getFullYear(),a.getMonth(),a.getDate()+7)>e)return b.amt}}if(b.freq==='Weekly'||b.freq==='Fortnight')return stdAmt(b);if(b.freq==='Month'&&!b.day)return stdAmt(b);return dueDate(b,n)?b.amt:0}
 function pushU(f,r){if(f.items.some(q=>q.id===r.id)){let i=2;while(f.items.some(q=>q.id===r.id+'~'+i))i++;r.id+='~'+i}f.items.push(r);return r}
 const mkItem=(b,n,a,od)=>{const r={id:'i'+b.id+'_'+fkey(n),bid:b.id,c:b.cat,n:b.name,o:b.o,a:a,d:false};if(od)r.od=od;return r};
 const dated=b=>!!b&&(b.freq==='Once'||((b.freq==='Month'||b.freq==='Annual')&&!!bday(b)));
@@ -517,7 +558,7 @@ function moi(b,k){const out=[],fp=fpAll();Object.keys(fp).sort().forEach(fk=>fp[
 const bN=(b,k)=>moi(b,k).length||cnt(b);
 const bTot=(b,k)=>{const m=moi(b,k);if(m.length)return Math.round(m.reduce((a,r)=>a+r.a,0)*100)/100;return (b.freq==='Annual'&&!b.mo)?0:b.amt*cnt(b)};
 const bOwed=(b,k)=>{const m=moi(b,k);if(m.length)return Math.round(m.reduce((a,r)=>a+(r.d?0:r.a),0)*100)/100;return Math.max(0,Math.round((bTot(b,k)-b.amt*done(b,k))*100)/100)};
-function migrate(){if(fixShift())persist();if(repair())persist();if(savMig())persist();if(movMig())persist();if(S.v===10)return;
+function migrate(){if(fixShift())persist();if(repair())persist();if(savMig())persist();if(apMig())persist();if(movMig())persist();if(S.v===10)return;
 if(!(S.v>=3)){
 S.bills.forEach(b=>{if(!b.o)b.o=OWN(b.cat)});
 seed.forEach(sb=>{const m=S.bills.find(b=>nk(b.name)===nk(sb.name)&&b.o===sb.o);if(m){m.amt=sb.amt;m.freq=sb.freq;m.day=sb.day;m.mo=sb.mo;m.bal=m.bal||sb.bal;if(m.dd===undefined)m.dd=sb.dd}else S.bills.push(Object.assign({},sb,{id:'m_'+nk(sb.name)+sb.o}))});
@@ -541,7 +582,7 @@ function ensureThrough(n){const ks=Object.keys(fpAll()).sort();if(!ks.length)ret
 function claimMonth(o,it){if(!dated(o)||o.freq==='Once')return;const mo=ymk(odate(it,fkey(F)));Object.keys(fpAll()).forEach(k=>{if(k===fkey(F))return;S.fp[k].items.forEach(r=>{if(r.bid===o.id&&r.a>0&&!r.d&&!r.co&&!r.mv&&ymk(odate(r,k))===mo){r.a=0;r.x=1}})})}
 function forceInto(o){const A=fcu();if(!A||A.items.some(r=>r.bid===o.id&&r.a>0&&!r.co))return;claimMonth(o,pushU(A,mkItem(o,F,stdAmt(o)||o.amt)))}
 function dups(F2){const A=fpAll()[fkey(F2)];if(!A)return[];const out=[],g={};
-A.items.forEach(r=>{if(r.a>0&&r.bid&&!r.co&&!r.ok&&!r.part){const v=vw(r),key=nk(v.n)+'|'+(v.o||'');(g[key]=g[key]||[]).push(r)}});
+A.items.forEach(r=>{if(r.a>0&&r.bid&&!r.co&&!r.ok&&!r.part&&!isPlan(bl(r))){const v=vw(r),key=nk(v.n)+'|'+(v.o||'');(g[key]=g[key]||[]).push(r)}});
 for(const gk in g){const L3=g[gk];if(L3.length>1&&L3.some(r=>!r.d))out.push({t:'same',b:L3[0].bid,items:L3})}
 A.items.forEach(r=>{const b=bl(r);if(!b||!(r.a>0)||r.d||r.co||r.ok||r.part||r.rest||!(b.freq==='Month'||b.freq==='Annual')||!bday(b))return;const mo=ymk(odate(r,fkey(F2)));
 const oth=[];Object.keys(fpAll()).forEach(k=>{if(k===fkey(F2))return;S.fp[k].items.forEach(q=>{if(q.bid===r.bid&&q.a>0&&!q.co&&!q.ok&&!q.part&&ymk(odate(q,k))===mo)oth.push(q)})});
@@ -591,7 +632,8 @@ function calData(y,m,BL){BL=BL||S.bills;const out={},add=(k,e)=>(out[k]=out[k]||
  // pay days in this month
  const pays=[];for(let n=Math.floor(Math.round((new Date(y,m,1)-AN)/864e5)/14)-1;;n++){const d=fdate(n);if(d>new Date(y,m,last))break;if(d.getFullYear()===y&&d.getMonth()===m)pays.push(n)}
  pays.forEach(n=>{const k=fkey(n);out[k]=out[k]||[];out[k].pay=n});
- BL.forEach(b=>{if(!(b.amt>0))return;const eD=endD(b);
+ BL.forEach(b=>{if(isPlan(b)){planPays(b).forEach(x=>{if(x.d.getFullYear()!==y||x.d.getMonth()!==m)return;const f=fp[fkOf(x.d)],its=f?f.items.filter(r=>r.bid===b.id&&r.a>0&&!r.co):[],paid=its.length>0&&its.every(r=>r.d);add(ymd(x.d),{b,a:x.a,paid,od:!paid&&x.d<t0})});return}
+  if(!(b.amt>0))return;const eD=endD(b);
   const perPay=b.freq==='Weekly'||b.freq==='Fortnight'||(b.freq==='Month'&&!b.day);
   if(perPay){pays.forEach(n=>{const k=fkey(n),f=fp[k],its=f?f.items.filter(r=>r.bid===b.id&&!r.co&&r.a>0):[];if(eD&&fdate(n)>eD&&!its.length)return;if(f&&!its.length&&f.items.some(r=>r.bid===b.id&&r.x))return;add(k,{b,a:its.length?its.reduce((a,r)=>a+r.a,0):stdAmt(b),paid:its.length?its.every(r=>r.d):false,pay:1,od:its.some(isOv)})});return}
   let d=null;if(b.freq==='Once'){if(b.dt){const x=pd(b.dt);if(x.getFullYear()===y&&x.getMonth()===m)d=x}}
