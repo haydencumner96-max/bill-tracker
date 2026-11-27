@@ -22,7 +22,7 @@ swap("DEFN=['Person 1','Person 2']", "DEFN=['Hayden','Jordyn']")
 swap("Changes sync to every device signed in to Claude with access to this tracker.",
      "Changes sync to every device signed in as '+esc(window.btUser?btUser():'')+'.")
 swap('<button onclick="rs(this)">Reset</button>',
-     '<button onclick="rs(this)">Reset</button>\'+(window.btSignOut?\'<button onclick="btSignOut()">Sign out</button>\':\'\')+\'')
+     '<button onclick="rs(this)">Reset</button>\'+(window.btSignOut?\'<button onclick="btChangePw()">Change password</button><button onclick="btSignOut()">Sign out</button>\':\'\')+\'')
 swap("Then enter each fortnight\\'s pay and tick bills off as you pay them.</p>",
      "Then enter each fortnight\\'s pay and tick bills off as you pay them.</p><p class=\"mu\" style=\"margin:8px 0 0\"><b>Moving from the Claude version?</b> There, tap Data → Export. Here, tap Data → Import and pick that file.</p>")
 

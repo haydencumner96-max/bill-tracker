@@ -12,11 +12,19 @@
   const isNetErr = (e) => !navigator.onLine || (e && (e.name === "TypeError" || /fetch|network|Failed to fetch|Load failed/i.test(String(e.message || e))));
   let sb = null, user = null, resolveReady;
   const ready = new Promise((r) => (resolveReady = r));
+  // arriving from a "reset your password" email (read before the library tidies the address bar)
+  const urlBits = location.hash + "&" + location.search;
+  let recovering = /type=recovery/.test(urlBits);
+  const linkErr = /error_code=otp_expired|error=access_denied/.test(urlBits);
+  const resetTo = () => location.origin + location.pathname;
 
   function client() {
     if (!cfg.supabaseUrl || !cfg.supabaseKey || !window.supabase) return null;
     // same saved login as Fortnight Shop, so signing in to one signs in to both
-    if (!sb) sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, storageKey: "fs-auth" } });
+    if (!sb) {
+      sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, storageKey: "fs-auth" } });
+      sb.auth.onAuthStateChange((evt) => { if (evt === "PASSWORD_RECOVERY") recovering = true; });
+    }
     return sb;
   }
 
@@ -32,14 +40,15 @@
 #bt-gate button:disabled{opacity:.6}
 #bt-gate .err{color:var(--bad,#b3261e);font-weight:600;margin:12px 0 0}
 #bt-gate .alt{margin-top:16px;font-size:14px}
-#bt-gate .alt a{color:var(--ac,#2b2f33)}`;
+#bt-gate .alt a{color:var(--ac,#2b2f33)}
+#bt-gate .ok{color:var(--ok,#2a7a4b);font-weight:600;margin:12px 0 0}`;
 
   function onBody(fn) { if (document.body) fn(); else document.addEventListener("DOMContentLoaded", fn, { once: true }); }
 
   function showLogin() {
     onBody(() => {
       if (document.getElementById("bt-gate")) return;
-      const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+      if (!document.getElementById("bt-css")) { const st = document.createElement("style"); st.id = "bt-css"; st.textContent = css; document.head.appendChild(st); }
       const g = document.createElement("div"); g.id = "bt-gate";
       g.innerHTML = `<form class="box" id="bt-f" autocomplete="on">
         <img class="ic" src="icons/icon-192.png" alt="">
@@ -48,11 +57,30 @@
         <label for="bt-em">Email</label><input id="bt-em" type="email" autocomplete="username" required>
         <label for="bt-pw">Password</label><input id="bt-pw" type="password" autocomplete="current-password" required>
         <p class="err" id="bt-e" hidden></p>
+        <p class="ok" id="bt-k" hidden></p>
         <button type="submit" id="bt-go">Sign in</button>
+        <p class="alt"><a href="#" id="bt-forgot">Forgot password?</a></p>
         <p class="alt"><a href="#" id="bt-local">Use without signing in</a> (saves on this device only)</p>
       </form>`;
       document.body.appendChild(g);
       g.querySelector("#bt-local").onclick = (ev) => { ev.preventDefault(); g.remove(); resolveReady(false); };
+      const showErr = (t) => { const e = g.querySelector("#bt-e"); g.querySelector("#bt-k").hidden = true; e.hidden = false; e.textContent = t; };
+      if (linkErr) showErr("That reset link has expired or was already used. Tap Forgot password? for a new one.");
+      g.querySelector("#bt-forgot").onclick = async (ev) => {
+        ev.preventDefault();
+        const em = g.querySelector("#bt-em").value.trim();
+        if (!/.+@.+\..+/.test(em)) { showErr("Type your email above first, then tap Forgot password? again."); g.querySelector("#bt-em").focus(); return; }
+        const a = g.querySelector("#bt-forgot"); a.textContent = "Sending…";
+        try {
+          const { error } = await client().auth.resetPasswordForEmail(em, { redirectTo: resetTo() });
+          if (error) throw error;
+          g.querySelector("#bt-e").hidden = true; const k = g.querySelector("#bt-k"); k.hidden = false;
+          k.textContent = "Reset link sent to " + em + ". Open the email on this phone and tap the link to choose a new password.";
+        } catch (err) {
+          showErr(isNetErr(err) ? "No connection. Try again when you have signal." : /rate|limit|too many|seconds/i.test(err.message || "") ? "Too many reset emails. Wait a few minutes and try again." : (err.message || "Couldn't send the reset email."));
+        }
+        a.textContent = "Forgot password?";
+      };
       g.querySelector("#bt-f").onsubmit = async (ev) => {
         ev.preventDefault();
         const btn = g.querySelector("#bt-go"), e = g.querySelector("#bt-e");
@@ -70,6 +98,46 @@
     });
   }
 
+  // after tapping the link in the reset email: choose a new password, then straight into the app
+  function showNewPassword() {
+    onBody(() => {
+      const old = document.getElementById("bt-gate"); if (old) old.remove();
+      if (!document.getElementById("bt-css")) { const st = document.createElement("style"); st.id = "bt-css"; st.textContent = css; document.head.appendChild(st); }
+      const g = document.createElement("div"); g.id = "bt-gate";
+      g.innerHTML = `<form class="box" id="bt-nf">
+        <img class="ic" src="icons/icon-192.png" alt="">
+        <h1>Choose a new password</h1>
+        <p>For ${esc(user && user.email)}. Use it in Bill Tracker and Fortnight Shop from now on.</p>
+        <label for="bt-n1">New password</label><input id="bt-n1" type="password" autocomplete="new-password" required>
+        <label for="bt-n2">Type it again</label><input id="bt-n2" type="password" autocomplete="new-password" required>
+        <p class="err" id="bt-ne" hidden></p>
+        <button type="submit" id="bt-ngo">Save new password</button>
+      </form>`;
+      document.body.appendChild(g);
+      g.querySelector("#bt-nf").onsubmit = async (ev) => {
+        ev.preventDefault();
+        const a = g.querySelector("#bt-n1").value, b = g.querySelector("#bt-n2").value, e = g.querySelector("#bt-ne"), btn = g.querySelector("#bt-ngo");
+        const say = (t) => { e.hidden = false; e.textContent = t; };
+        if (a.length < 8) return say("Use at least 8 characters.");
+        if (a !== b) return say("The two passwords don't match.");
+        btn.disabled = true; btn.textContent = "Saving…"; e.hidden = true;
+        try {
+          const { error } = await client().auth.updateUser({ password: a });
+          if (error) throw error;
+          recovering = false; g.remove(); resolveReady(true);
+          setTimeout(() => { try { stat("Password changed"); } catch (x) {} }, 600);
+        } catch (err) {
+          say(isNetErr(err) ? "No connection. Try again when you have signal." : (err.message || "Couldn't save the password."));
+          btn.disabled = false; btn.textContent = "Save new password";
+        }
+      };
+    });
+  }
+  const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // change password while signed in (Data tab)
+  window.btChangePw = function () { if (user) showNewPassword(); };
+
   async function boot() {
     const s = client();
     if (!s) { // no settings, or the library didn't load (offline on the very first open)
@@ -78,7 +146,7 @@
     }
     let session = null;
     try { session = (await s.auth.getSession()).data.session; } catch (e) {}
-    if (session && session.user) { user = session.user; resolveReady(true); return; }
+    if (session && session.user) { user = session.user; if (recovering) { showNewPassword(); return; } resolveReady(true); return; }
     if (!navigator.onLine) { addEventListener("online", () => location.reload(), { once: true }); resolveReady(false); return; }
     showLogin();
   }
